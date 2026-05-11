@@ -10,18 +10,24 @@ from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
 
 
-def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
+_SHRINK_METHODS = {"apeglm", "ashr", "normal"}
+
+
+def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", shrink: str | None = None, **kwargs) -> pd.DataFrame:
     """Run DESeq2 differential expression analysis.
 
     Args:
         counts: Gene count matrix (genes x samples) with non-negative integers.
         metadata: Sample metadata DataFrame with row names matching counts columns.
         design: R formula string for the experimental design.
+        shrink: LFC shrinkage method — one of 'apeglm', 'ashr', or 'normal'. None skips shrinkage.
         **kwargs: Additional arguments passed to DESeq2::DESeq().
 
     Returns:
         DataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
     """
+    if shrink is not None and shrink not in _SHRINK_METHODS:
+        raise ValueError(f"shrink must be one of {sorted(_SHRINK_METHODS)}, got '{shrink}'")
     if (counts < 0).any().any():
         raise RDataError("Count matrix contains negative values")
     if not set(counts.columns).issubset(set(metadata.index)):
@@ -46,6 +52,14 @@ def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condit
             countData=r_counts, colData=r_metadata, design=r_design,
         )
         dds = deseq2_pkg.DESeq(dds, **kwargs)
-        res = deseq2_pkg.results(dds)
+
+        if shrink is None:
+            res = deseq2_pkg.results(dds)
+        else:
+            if shrink in ("apeglm", "ashr"):
+                ensure_installed(shrink)
+            coef_names = deseq2_pkg.resultsNames(dds)
+            coef_name = coef_names[len(coef_names) - 1]
+            res = deseq2_pkg.lfcShrink(dds, coef=coef_name, type=shrink)
 
     return to_pandas(to_r_df(res))
