@@ -35,6 +35,12 @@ def test_bad_formula_raises(sample_counts, sample_metadata):
         deseq2(sample_counts, sample_metadata, design="not a formula ~~~")
 
 
+def test_invalid_shrink_method_raises(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import deseq2
+    with pytest.raises(ValueError, match="shrink must be one of"):
+        deseq2(sample_counts, sample_metadata, shrink="bad")
+
+
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_deseq2_returns_dataframe(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import deseq2
@@ -42,4 +48,13 @@ def test_deseq2_returns_dataframe(sample_counts, sample_metadata):
     assert isinstance(result, pd.DataFrame)
     assert "log2FoldChange" in result.columns
     assert "padj" in result.columns
+    assert len(result) == len(sample_counts)
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_deseq2_shrink_normal(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import deseq2
+    result = deseq2(sample_counts, sample_metadata, design="~ condition", shrink="normal")
+    assert isinstance(result, pd.DataFrame)
+    assert "log2FoldChange" in result.columns
     assert len(result) == len(sample_counts)
