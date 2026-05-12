@@ -56,6 +56,10 @@ results.head()
 - R 4.0+ (with Bioconductor)
 - rpy2
 
+## Glossary
+
+New to bioinformatics or unsure about a term? See [GLOSSARY.md](GLOSSARY.md) — everything explained from first principles.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
