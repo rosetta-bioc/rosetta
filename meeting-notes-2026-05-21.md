@@ -2,7 +2,6 @@
 
 **Date:** Wednesday, May 21, 2026, 4:00 PM ET  
 **Attendees:** Matias Salibian-Barrera (UBC), Catherine Chi Chung, John Muirhead-Gould (Nodes Bio)  
-**Transcript:** `MasterPlan/02_AreasOfFocus/Nodes_Bio/Nodes Bio, Inc./00_Strategic_Notes/2026-05-21_Rosetta_GSoC_Meeting_Transcript.json`
 
 ---
 
