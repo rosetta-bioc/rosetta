@@ -58,3 +58,38 @@ def test_deseq2_shrink_normal(sample_counts, sample_metadata):
     assert isinstance(result, pd.DataFrame)
     assert "log2FoldChange" in result.columns
     assert len(result) == len(sample_counts)
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_get_results_names_success(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import get_results_names
+
+    names = get_results_names(sample_counts, sample_metadata, design="~ condition")
+
+    assert isinstance(names, list)
+    assert "Intercept" in names
+    assert any("condition" in name for name in names)
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_get_results_names_bad_formula(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import get_results_names
+    # Since 'invalid' is not in metadata, this should raise RDataError.
+    with pytest.raises(RDataError):
+        get_results_names(sample_counts, sample_metadata, design="~ invalid")
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_preview_design(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import preview_design
+    # Verify that dds can be initialized without crashing
+    dds = preview_design(sample_counts, sample_metadata)
+    assert dds is not None
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_run_deseq2(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import run_deseq2
+    # Verify that full fitting runs correctly and returns a dds object
+    dds = run_deseq2(sample_counts, sample_metadata)
+    assert dds is not None
