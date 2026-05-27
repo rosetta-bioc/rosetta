@@ -56,4 +56,5 @@ def to_r_df(r_obj):
 def r_nrow(r_obj):
     """Get nrow of an R object via base::nrow."""
     with localconverter(_converter):
-        return _get_base().nrow(r_obj)
+        result = _get_base().nrow(r_obj)
+        return int(result[0])  # Convert R vector to Python int
