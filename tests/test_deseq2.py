@@ -74,7 +74,48 @@ def test_preview_design(sample_counts, sample_metadata):
 
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_run_deseq2(sample_counts, sample_metadata):
+    """Verify that run_deseq2 performs model fitting successfully."""
     from rosetta.wrappers.deseq2 import run_deseq2
-    # Verify that full fitting runs correctly and returns a dds object
-    dds = run_deseq2(sample_counts, sample_metadata)
+    # 添加 design 參數
+    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
     assert dds is not None
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_lfc_shrink_success(sample_counts, sample_metadata):
+    """Verify the lfc_shrink pipeline integration."""
+    from rosetta.wrappers.deseq2 import run_deseq2, get_results_names, lfc_shrink
+    
+    # 1. Fit the model
+    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
+    
+    # 2. Get names and verify we have coefficients
+    coefs = get_results_names(sample_counts, sample_metadata, design="~ condition")
+    
+    # Debug: Print coefficients if the test fails
+    # Let's find the specific coefficient for 'condition'
+    # Usually it's 'condition_treated_vs_control'
+    target_coef = next((c for c in coefs if "condition" in c and "control" in c), None)
+    
+    if target_coef is None:
+        pytest.fail(f"Could not find a valid condition coefficient in: {coefs}")
+    
+    # 3. Perform lfcShrink
+    result = lfc_shrink(dds, coef=target_coef, type="apeglm")
+    
+    assert isinstance(result, pd.DataFrame)
+    assert "log2FoldChange" in result.columns
+    assert len(result) == len(sample_counts)
+
+    print(f"DEBUG: Using coef={target_coef}")
+
+
+@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+def test_lfc_shrink_invalid_type(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import run_deseq2, lfc_shrink
+    
+    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
+    
+    # Verify that invalid type raises ValueError before hitting R
+    with pytest.raises(ValueError, match="Invalid shrinkage type"):
+        lfc_shrink(dds, coef="condition_treated_vs_control", type="invalid_method")

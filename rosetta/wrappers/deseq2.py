@@ -44,6 +44,36 @@ def preview_design(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "
     """Lightweight preview: Initialize DESeqDataSet without fitting the model."""
     return _prepare_dds(counts, metadata, design)
 
+
+def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
+    """
+    Setup and fit the DESeq2 model.
+
+    Args:
+        counts: Pandas DataFrame containing raw count data.
+        metadata: Pandas DataFrame containing sample information.
+        design: Formula string for the DESeq2 design.
+
+    Returns:
+        A fitted DESeqDataSet object.
+
+    Raises:
+        RDataError: If the model fitting process fails.
+    """
+    deseq2_pkg = importr("DESeq2")
+    
+    # 1. Initialize the DESeqDataSet object using the internal factory function
+    dds = _prepare_dds(counts, metadata, design)
+    
+    # 2. Perform statistical model fitting
+    with localconverter(_converter):
+        try:
+            return deseq2_pkg.DESeq(dds)
+        except Exception as e:
+            # Wrap R execution errors into RDataError for consistent error handling
+            raise RDataError(f"DESeq2 model fitting failed: {e}") from e
+    
+
 def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition") -> list:
     """Parameter check: Fit the model and return available results names."""
     deseq2_pkg = importr("DESeq2")
@@ -56,23 +86,32 @@ def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str 
         except Exception as e:
             raise RDataError(f"DESeq2 analysis failed: {e}") from e
 
-def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
-    """Core operation: Perform full model fitting and return the dds object."""
-    deseq2_pkg = importr("DESeq2")
-    dds = _prepare_dds(counts, metadata, design)
-    with localconverter(_converter):
-        return deseq2_pkg.DESeq(dds)
 
-def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
-    """Legacy API: Compatibility wrapper to run the full pipeline."""
-    deseq2_pkg = importr("DESeq2")
-    dds = run_deseq2(counts, metadata, design)
+def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
+    """
+    Perform Log2 Fold Change shrinkage on a fitted DESeqDataSet.
     
-    with localconverter(_converter):
-        res = deseq2_pkg.results(dds, **kwargs)
-        
-    return to_pandas(to_r_df(res))
+    Supports 'apeglm', 'ashr', and 'normal'.
+    """
+    valid_methods = ['apeglm', 'ashr', 'normal']
+    if type not in valid_methods:
+        raise ValueError(f"Invalid shrinkage type '{type}'. Must be one of {valid_methods}")
 
+    deseq2_pkg = importr("DESeq2")
+
+    with localconverter(_converter):
+        try:
+            # 這裡不強加 res=res_obj，改為依賴 dds 擬合狀態
+            # 但若 type 為 apeglm 或 ashr，需確認環境已有安裝
+            return to_pandas(to_r_df(
+                deseq2_pkg.lfcShrink(dds=dds, coef=coef, type=type, **kwargs)
+            ))
+        except Exception as e:
+            # 如果報錯是因為套件缺失，給予明確的指導
+            if "requires installing" in str(e):
+                raise RDataError(f"Shrinkage method '{type}' is missing required R packages: {e}")
+            raise RDataError(f"Shrinkage analysis failed: {e}") from e
+        
 
 def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: float = 0.1) -> pd.DataFrame:
     """
@@ -100,3 +139,16 @@ def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: f
             return to_pandas(to_r_df(res))
         except Exception as e:
             raise RDataError(f"Failed to extract results: {e}") from e
+        
+
+def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
+    """Legacy API: Compatibility wrapper to run the full pipeline."""
+    deseq2_pkg = importr("DESeq2")
+    dds = run_deseq2(counts, metadata, design)
+    
+    with localconverter(_converter):
+        res = deseq2_pkg.results(dds, **kwargs)
+        
+    return to_pandas(to_r_df(res))
+
+

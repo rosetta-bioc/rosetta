@@ -22,7 +22,7 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 RUN R -e "install.packages('BiocManager', repos='https://cloud.r-project.org')"
 
 # Install essential dependencies and moderate-sized packages
-RUN R -e "BiocManager::install(c('DESeq2', 'edgeR', 'limma', 'phyloseq', 'clusterProfiler'), ask=FALSE, update=FALSE)"
+RUN R -e "BiocManager::install(c('DESeq2', 'edgeR', 'limma', 'phyloseq', 'clusterProfiler', 'apeglm', 'ashr'), ask=FALSE, update=FALSE)"
 
 # Install large/heavy packages separately to ensure build stability on memory-constrained systems
 RUN R -e "BiocManager::install('org.Hs.eg.db', ask=FALSE, update=FALSE)"
