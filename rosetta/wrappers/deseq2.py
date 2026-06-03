@@ -14,6 +14,7 @@ _SHRINK_METHODS = {"apeglm", "ashr", "normal"}
 
 
 # --- Private Helper Functions ---
+
 def _prepare_dds(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     """Internal helper to setup DESeqDataSet with error handling."""
     if (counts < 0).any().any():
@@ -49,8 +50,36 @@ def preview_design(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "
     return _prepare_dds(counts, metadata, design)
 
 
+def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
+    """
+    Setup and fit the DESeq2 model.
+
+    Args:
+        counts: Gene count matrix (genes x samples) with non-negative integers.
+        metadata: Sample metadata DataFrame with row names matching counts columns.
+        design: R formula string for the experimental design.
+
+    Returns:
+        A fitted DESeqDataSet (dds) object for use with get_results() or lfc_shrink().
+
+    Raises:
+        RDataError: If dataset construction or model fitting fails.
+    """
+    deseq2_pkg = importr("DESeq2")
+    dds = _prepare_dds(counts, metadata, design)
+
+    with localconverter(_converter):
+        try:
+            return deseq2_pkg.DESeq(dds)
+        except Exception as e:
+            raise RDataError(f"DESeq2 model fitting failed: {e}") from e
+
+
 def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition") -> list:
-    """Parameter check: Fit the model and return available results names."""
+    """Parameter check: Fit the model and return available results names.
+
+    Use this to discover valid coefficient names before calling lfc_shrink().
+    """
     deseq2_pkg = importr("DESeq2")
     dds = _prepare_dds(counts, metadata, design)
 
@@ -62,28 +91,59 @@ def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str 
             raise RDataError(f"DESeq2 analysis failed: {e}") from e
 
 
-def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
-    """Core operation: Perform full model fitting and return the dds object."""
+def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
+    """
+    Perform log2 fold-change shrinkage on a fitted DESeqDataSet.
+
+    Args:
+        dds: Fitted DESeqDataSet object (from run_deseq2()).
+        coef: Coefficient name to shrink (from get_results_names()).
+        type: Shrinkage method — one of 'apeglm', 'ashr', or 'normal'.
+        **kwargs: Additional arguments passed to DESeq2::lfcShrink().
+
+    Returns:
+        DataFrame with shrunken log2FoldChange and associated statistics.
+
+    Raises:
+        ValueError: If type is not a recognised shrinkage method.
+        RDataError: If the shrinkage call fails in R.
+    """
+    if type not in _SHRINK_METHODS:
+        raise ValueError(f"Invalid shrinkage type '{type}'. Must be one of {sorted(_SHRINK_METHODS)}")
+
+    if type in ("apeglm", "ashr"):
+        ensure_installed(type)
+
     deseq2_pkg = importr("DESeq2")
-    dds = _prepare_dds(counts, metadata, design)
+
     with localconverter(_converter):
-        return deseq2_pkg.DESeq(dds)
+        try:
+            return to_pandas(to_r_df(
+                deseq2_pkg.lfcShrink(dds=dds, coef=coef, type=type, **kwargs)
+            ))
+        except Exception as e:
+            if "requires installing" in str(e):
+                raise RDataError(
+                    f"Shrinkage method '{type}' requires additional R packages: {e}"
+                ) from e
+            raise RDataError(f"Shrinkage analysis failed: {e}") from e
 
 
-def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: float = 0.1, shrink: str | None = None) -> pd.DataFrame:
+def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: float = 0.1) -> pd.DataFrame:
     """
     Extract results from a fitted DESeqDataSet.
 
+    For LFC shrinkage, call lfc_shrink() on the same dds object.
+
     Args:
-        dds: The fitted R DESeqDataSet object (from run_deseq2).
+        dds: The fitted R DESeqDataSet object (from run_deseq2()).
         contrast: A list defining the comparison [factor, numerator, denominator].
         lfc_threshold: Log2 fold change threshold (absolute).
         alpha: Significance cutoff (FDR).
-        shrink: LFC shrinkage method — one of 'apeglm', 'ashr', or 'normal'. None skips shrinkage.
-    """
-    if shrink is not None and shrink not in _SHRINK_METHODS:
-        raise ValueError(f"shrink must be one of {sorted(_SHRINK_METHODS)}, got '{shrink}'")
 
+    Returns:
+        DataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
+    """
     deseq2_pkg = importr("DESeq2")
 
     with localconverter(_converter):
@@ -93,34 +153,26 @@ def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: f
             args["contrast"] = ro.StrVector(contrast)
 
         try:
-            if shrink is None:
-                res = deseq2_pkg.results(dds, **args)
-            else:
-                if shrink in ("apeglm", "ashr"):
-                    ensure_installed(shrink)
-                coef_names = deseq2_pkg.resultsNames(dds)
-                coef_name = coef_names[len(coef_names) - 1]
-                res = deseq2_pkg.lfcShrink(dds, coef=coef_name, type=shrink)
+            res = deseq2_pkg.results(dds, **args)
             return to_pandas(to_r_df(res))
         except Exception as e:
             raise RDataError(f"Failed to extract results: {e}") from e
 
 
-def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", shrink: str | None = None, **kwargs) -> pd.DataFrame:
+def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
     """Run DESeq2 differential expression analysis.
+
+    Convenience wrapper that runs the full pipeline in one call.
+    For shrinkage or custom contrasts, use run_deseq2() + lfc_shrink() / get_results() directly.
 
     Args:
         counts: Gene count matrix (genes x samples) with non-negative integers.
         metadata: Sample metadata DataFrame with row names matching counts columns.
         design: R formula string for the experimental design.
-        shrink: LFC shrinkage method — one of 'apeglm', 'ashr', or 'normal'. None skips shrinkage.
         **kwargs: Additional arguments passed to DESeq2::results().
 
     Returns:
         DataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
     """
-    if shrink is not None and shrink not in _SHRINK_METHODS:
-        raise ValueError(f"shrink must be one of {sorted(_SHRINK_METHODS)}, got '{shrink}'")
-
     dds = run_deseq2(counts, metadata, design)
-    return get_results(dds, shrink=shrink)
+    return get_results(dds, **kwargs)
