@@ -10,7 +10,7 @@ from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
 
 
-def edger(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
+def edger(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", contrast=None, lfc: float = 0, **kwargs) -> pd.DataFrame:
     """Run edgeR quasi-likelihood differential expression analysis.
 
     Args:
@@ -46,7 +46,31 @@ def edger(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ conditi
         dge = edger_pkg.calcNormFactors(dge)
         dge = edger_pkg.estimateDisp(dge, r_design_matrix)
         fit = edger_pkg.glmQLFit(dge, r_design_matrix, **kwargs)
-        res = edger_pkg.glmQLFTest(fit)
+
+        # Prepare contrast object if provided
+        r_contrast = None
+        if contrast is not None:
+            # Handle both list (e.g., [0, 1]) and DataFrame (matrix) inputs
+            r_contrast = ro.FloatVector(contrast) if isinstance(contrast, list) else to_r_matrix(contrast)
+
+        # Determine testing method (TREAT vs. QL-test)
+        if lfc > 0:
+            # Prepare arguments for glmTreat, excluding 'fit' from kwargs
+            treat_args = {"lfc": lfc}
+            if r_contrast is not None:
+                treat_args["contrast"] = r_contrast
+            
+            # Pass 'fit' as a positional argument explicitly
+            res = edger_pkg.glmTreat(fit, **treat_args)
+        else:
+            # Prepare arguments for glmQLFTest, excluding 'fit' from kwargs
+            qlf_args = {}
+            if r_contrast is not None:
+                qlf_args["contrast"] = r_contrast
+            
+            # Pass 'fit' as a positional argument explicitly
+            res = edger_pkg.glmQLFTest(fit, **qlf_args)
+
         top = edger_pkg.topTags(res, n=r_nrow(r_counts))
 
     return to_pandas(to_r_df(top))
