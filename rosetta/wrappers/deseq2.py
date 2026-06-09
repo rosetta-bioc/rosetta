@@ -99,15 +99,15 @@ def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
 
     deseq2_pkg = importr("DESeq2")
 
-    with localconverter(_converter):
+with localconverter(_converter):
         try:
-            # 這裡不強加 res=res_obj，改為依賴 dds 擬合狀態
-            # 但若 type 為 apeglm 或 ashr，需確認環境已有安裝
+            # We do not force assignment to res_obj, instead relying on the dds fit state.
+            # However, for 'apeglm' or 'ashr' shrinkage types, ensure the required R packages are installed.
             return to_pandas(to_r_df(
                 deseq2_pkg.lfcShrink(dds=dds, coef=coef, type=type, **kwargs)
             ))
         except Exception as e:
-            # 如果報錯是因為套件缺失，給予明確的指導
+            # If the error is caused by missing R packages, provide clear instructions.
             if "requires installing" in str(e):
                 raise RDataError(f"Shrinkage method '{type}' is missing required R packages: {e}")
             raise RDataError(f"Shrinkage analysis failed: {e}") from e

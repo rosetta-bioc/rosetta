@@ -27,6 +27,7 @@ RUN R -e "BiocManager::install(c('DESeq2', 'edgeR', 'limma', 'phyloseq', 'cluste
 # Install large/heavy packages separately to ensure build stability on memory-constrained systems
 RUN R -e "BiocManager::install('org.Hs.eg.db', ask=FALSE, update=FALSE)"
 RUN R -e "BiocManager::install('Seurat', ask=FALSE, update=FALSE)"
+RUN R -e 'BiocManager::install("ReactomePA")'
 
 # 4. Install Python core tools and rpy2 (pinned version to ensure compatibility)
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \

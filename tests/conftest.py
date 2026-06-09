@@ -44,3 +44,16 @@ def limma_fit_object():
     fit = limma.eBayes(fit)
     
     return fit
+
+@pytest.fixture
+def custom_term2gene():
+    """Provides a standard custom gene set mapping table for testing."""
+    return pd.DataFrame({
+        "term": ["Pathway_A", "Pathway_A", "Pathway_B"],
+        "gene": ["TP53", "BRCA1", "PTEN"]
+    })
+
+@pytest.fixture
+def sample_genes():
+    """Provides a standard list of gene identifiers for testing."""
+    return ["TP53", "BRCA1", "EGFR"]
