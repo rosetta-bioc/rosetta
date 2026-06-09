@@ -50,21 +50,37 @@ def preview_design(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "
     return _prepare_dds(counts, metadata, design)
 
 
-def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
+def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     """
     Setup and fit the DESeq2 model.
 
     Args:
-        counts: Gene count matrix (genes x samples) with non-negative integers.
-        metadata: Sample metadata DataFrame with row names matching counts columns.
-        design: R formula string for the experimental design.
+        counts: Pandas DataFrame containing raw count data.
+        metadata: Pandas DataFrame containing sample information.
+        design: Formula string for the DESeq2 design.
 
     Returns:
-        A fitted DESeqDataSet (dds) object for use with get_results() or lfc_shrink().
+        A fitted DESeqDataSet object.
 
     Raises:
-        RDataError: If dataset construction or model fitting fails.
+        RDataError: If the model fitting process fails.
     """
+    deseq2_pkg = importr("DESeq2")
+    
+    # 1. Initialize the DESeqDataSet object using the internal factory function
+    dds = _prepare_dds(counts, metadata, design)
+    
+    # 2. Perform statistical model fitting
+    with localconverter(_converter):
+        try:
+            return deseq2_pkg.DESeq(dds)
+        except Exception as e:
+            # Wrap R execution errors into RDataError for consistent error handling
+            raise RDataError(f"DESeq2 model fitting failed: {e}") from e
+    
+
+def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition") -> list:
+    """Parameter check: Fit the model and return available results names."""
     deseq2_pkg = importr("DESeq2")
     dds = _prepare_dds(counts, metadata, design)
 
@@ -93,41 +109,29 @@ def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str 
 
 def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
     """
-    Perform log2 fold-change shrinkage on a fitted DESeqDataSet.
-
-    Args:
-        dds: Fitted DESeqDataSet object (from run_deseq2()).
-        coef: Coefficient name to shrink (from get_results_names()).
-        type: Shrinkage method — one of 'apeglm', 'ashr', or 'normal'.
-        **kwargs: Additional arguments passed to DESeq2::lfcShrink().
-
-    Returns:
-        DataFrame with shrunken log2FoldChange and associated statistics.
-
-    Raises:
-        ValueError: If type is not a recognised shrinkage method.
-        RDataError: If the shrinkage call fails in R.
+    Perform Log2 Fold Change shrinkage on a fitted DESeqDataSet.
+    
+    Supports 'apeglm', 'ashr', and 'normal'.
     """
-    if type not in _SHRINK_METHODS:
-        raise ValueError(f"Invalid shrinkage type '{type}'. Must be one of {sorted(_SHRINK_METHODS)}")
-
-    if type in ("apeglm", "ashr"):
-        ensure_installed(type)
+    valid_methods = ['apeglm', 'ashr', 'normal']
+    if type not in valid_methods:
+        raise ValueError(f"Invalid shrinkage type '{type}'. Must be one of {valid_methods}")
 
     deseq2_pkg = importr("DESeq2")
 
-    with localconverter(_converter):
+with localconverter(_converter):
         try:
+            # We do not force assignment to res_obj, instead relying on the dds fit state.
+            # However, for 'apeglm' or 'ashr' shrinkage types, ensure the required R packages are installed.
             return to_pandas(to_r_df(
                 deseq2_pkg.lfcShrink(dds=dds, coef=coef, type=type, **kwargs)
             ))
         except Exception as e:
+            # If the error is caused by missing R packages, provide clear instructions.
             if "requires installing" in str(e):
-                raise RDataError(
-                    f"Shrinkage method '{type}' requires additional R packages: {e}"
-                ) from e
+                raise RDataError(f"Shrinkage method '{type}' is missing required R packages: {e}")
             raise RDataError(f"Shrinkage analysis failed: {e}") from e
-
+        
 
 def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: float = 0.1) -> pd.DataFrame:
     """
@@ -157,22 +161,16 @@ def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: f
             return to_pandas(to_r_df(res))
         except Exception as e:
             raise RDataError(f"Failed to extract results: {e}") from e
-
+        
 
 def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
-    """Run DESeq2 differential expression analysis.
-
-    Convenience wrapper that runs the full pipeline in one call.
-    For shrinkage or custom contrasts, use run_deseq2() + lfc_shrink() / get_results() directly.
-
-    Args:
-        counts: Gene count matrix (genes x samples) with non-negative integers.
-        metadata: Sample metadata DataFrame with row names matching counts columns.
-        design: R formula string for the experimental design.
-        **kwargs: Additional arguments passed to DESeq2::results().
-
-    Returns:
-        DataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
-    """
+    """Legacy API: Compatibility wrapper to run the full pipeline."""
+    deseq2_pkg = importr("DESeq2")
     dds = run_deseq2(counts, metadata, design)
-    return get_results(dds, **kwargs)
+    
+    with localconverter(_converter):
+        res = deseq2_pkg.results(dds, **kwargs)
+        
+    return to_pandas(to_r_df(res))
+
+

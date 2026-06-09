@@ -43,3 +43,23 @@ def test_edger_returns_dataframe(sample_counts, sample_metadata):
     assert "logFC" in result.columns
     assert "FDR" in result.columns
     assert len(result) == len(sample_counts)
+
+
+@pytest.mark.skipif(not _edger_available(), reason="edgeR not installed in R")
+def test_edger_with_contrast(sample_counts, sample_metadata):
+    from rosetta.wrappers.edger import edger
+    # Define a simple contrast vector to compare conditions.
+    # This assumes the design matrix columns can accept this contrast vector.
+    contrast = [0, 1] 
+    result = edger(sample_counts, sample_metadata, design="~ condition", contrast=contrast)
+    assert isinstance(result, pd.DataFrame)
+    assert "logFC" in result.columns
+
+
+@pytest.mark.skipif(not _edger_available(), reason="edgeR not installed in R")
+def test_edger_with_treat(sample_counts, sample_metadata):
+    from rosetta.wrappers.edger import edger
+    # Test if lfc > 0 triggers the glmTreat pathway correctly
+    result = edger(sample_counts, sample_metadata, design="~ condition", lfc=1.0)
+    assert isinstance(result, pd.DataFrame)
+    assert "logFC" in result.columns

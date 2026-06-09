@@ -1,7 +1,6 @@
 """clusterProfiler gene set enrichment wrapper."""
 
-from typing import List, Optional
-
+from typing import List, Any
 import pandas as pd
 import rpy2.robjects as ro
 from rpy2.robjects.conversion import localconverter
@@ -11,45 +10,94 @@ from .._bridge import _converter, to_pandas, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError
 
-
-def enrichment(
-    gene_list: List[str],
-    organism: str = "org.Hs.eg.db",
-    ont: str = "BP",
-    pvalue_cutoff: float = 0.05,
-    key_type: str = "SYMBOL",
-    **kwargs,
-) -> pd.DataFrame:
-    """Run GO enrichment analysis via clusterProfiler::enrichGO.
+def _run_r_enrichment(func_name: str, library: str = "clusterProfiler", **kwargs) -> pd.DataFrame:
+    """
+    Internal generic wrapper to execute clusterProfiler R functions.
 
     Args:
-        gene_list: List of gene identifiers.
-        organism: OrgDb annotation package (default: human).
-        ont: GO ontology — "BP", "MF", or "CC".
-        pvalue_cutoff: Adjusted p-value cutoff.
-        key_type: Type of gene identifier (SYMBOL, ENTREZID, ENSEMBL, etc.).
-        **kwargs: Additional arguments passed to clusterProfiler::enrichGO().
+        func_name: The name of the clusterProfiler function to execute.
+        **kwargs: Arguments to pass to the R function.
 
     Returns:
-        DataFrame with enrichment results (ID, Description, pvalue, p.adjust, etc.).
+        A pandas DataFrame containing the enrichment analysis results.
     """
-    if not gene_list:
+    ensure_installed(library)
+    pkg = importr(library)
+
+    # check if gene is empty
+    gene_arg = kwargs.get("gene")
+    if not gene_arg:
         raise RDataError("gene_list must not be empty")
-
-    ensure_installed("clusterProfiler")
-    ensure_installed(organism)
-
-    cp_pkg = importr("clusterProfiler")
+    
+    # Dynamically retrieve the R function from the clusterProfiler package
+    r_func = getattr(pkg, func_name)
 
     with localconverter(_converter):
-        r_genes = ro.StrVector(gene_list)
-        result = cp_pkg.enrichGO(
-            gene=r_genes,
-            OrgDb=organism,
-            ont=ont,
-            pvalueCutoff=pvalue_cutoff,
-            keyType=key_type,
-            **kwargs,
-        )
+        # Handle automatic conversion of Python types (List, dict, etc.) to R types
+        result = r_func(**kwargs)
 
     return to_pandas(to_r_df(result))
+
+
+def enrich_go(
+    gene_list: List[str], 
+    organism: str = "org.Hs.eg.db", 
+    ont: str = "BP", 
+    pvalue_cutoff: float = 0.05, 
+    min_gs_size: int = 10, 
+    max_gs_size: int = 500,
+    **kwargs
+) -> pd.DataFrame:
+    """Run Gene Ontology (GO) enrichment analysis."""
+    kwargs.update({
+        "OrgDb": organism,
+        "ont": ont,
+        "pvalueCutoff": pvalue_cutoff,
+        "minGSSize": min_gs_size,
+        "maxGSSize": max_gs_size
+    })
+    return _run_r_enrichment("enrichGO", gene=gene_list, **kwargs)
+
+
+def enrich_kegg(
+    gene_list: List[str], 
+    organism: str = "hsa", 
+    pvalue_cutoff: float = 0.05, 
+    min_gs_size: int = 10, 
+    max_gs_size: int = 500,
+    **kwargs
+) -> pd.DataFrame:
+    """Run KEGG pathway enrichment analysis."""
+    kwargs.update({
+        "organism": organism,
+        "pvalueCutoff": pvalue_cutoff,
+        "minGSSize": min_gs_size,
+        "maxGSSize": max_gs_size
+    })
+    return _run_r_enrichment("enrichKEGG", gene=gene_list, **kwargs)
+
+
+def enrich_pathway(gene_list: List[str], **kwargs) -> pd.DataFrame:
+    """Run Reactome pathway enrichment analysis."""
+    return _run_r_enrichment("enrichPathway", library="ReactomePA", gene=gene_list, **kwargs)
+
+
+def enrich_custom(
+    gene_list: List[str], 
+    term2gene: pd.DataFrame, 
+    min_gs_size: int = 10, 
+    max_gs_size: int = 500, 
+    **kwargs
+) -> pd.DataFrame:
+    """Run custom enrichment analysis."""
+    # Explicitly pack parameters into a dictionary to ensure they are not missed when passed to R
+    r_params = {
+        "gene": gene_list,
+        "TERM2GENE": term2gene,
+        "minGSSize": min_gs_size,
+        "maxGSSize": max_gs_size,
+    }
+    # Merge any additional parameters
+    r_params.update(kwargs)
+    
+    return _run_r_enrichment("enricher", **r_params)

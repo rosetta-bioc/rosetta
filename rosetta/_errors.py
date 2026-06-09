@@ -19,3 +19,6 @@ class RFormulaError(RosettaError):
 
 class RDataError(RosettaError):
     """Incompatible input data for R function."""
+class RosettaSecurityError(RosettaError):
+    """Exception raised for security-related issues."""
+

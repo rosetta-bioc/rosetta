@@ -8,6 +8,8 @@ from rpy2.robjects.packages import importr
 from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_pandas, r_nrow
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
+from ..stats.design import build_contrast_matrix
+from ..stats.decide import run_decide_tests
 
 
 def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
@@ -45,11 +47,34 @@ def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ co
 
     with localconverter(_converter):
         r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
-        dge = edger_pkg.DGEList(counts=r_counts)
-        dge = edger_pkg.calcNormFactors(dge)
-        v = limma_pkg.voom(dge, r_design_matrix)
-        fit = limma_pkg.lmFit(v, r_design_matrix, **kwargs)
+        # --- Core Fitting Logic ---
+        # Data prep: apply voom if RNA-seq counts are provided
+        if use_voom:
+            dge = edger_pkg.DGEList(counts=r_counts)
+            dge = edger_pkg.calcNormFactors(dge)
+            # v follows a near-normal distribution after voom transformation
+            target = limma_pkg.voom(dge, r_design_matrix)
+        else:
+            # Use raw input if it's already continuous (e.g., proteomics)
+            target = r_counts
+
+        # Fit linear model
+        fit = limma_pkg.lmFit(target, r_design_matrix, **kwargs)
+        # --------------------------
+
+        # Handle contrast matrix using stats module
+        if contrast:
+            contrast_mat = build_contrast_matrix(r_design_matrix.colnames, contrast)
+            fit = limma_pkg.contrasts_fit(fit, contrast_mat)
+        
+        # Empirical Bayes moderation
         fit = limma_pkg.eBayes(fit)
+        
+        # Determine significant genes using stats module
+        if decide_tests:
+            fit.results = run_decide_tests(fit)
+
+        # Extract results
         r_df = limma_pkg.topTable(fit, number=r_nrow(r_counts))
 
     return to_pandas(r_df)
