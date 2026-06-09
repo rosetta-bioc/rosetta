@@ -14,6 +14,14 @@ def _deseq2_available():
         return False
 
 
+def _apeglm_available():
+    try:
+        from rosetta._deps import is_installed
+        return is_installed("apeglm")
+    except Exception:
+        return False
+
+
 # --- Input validation (no R required) ---
 
 def test_negative_counts_raises(sample_counts, sample_metadata):
@@ -89,6 +97,7 @@ def test_run_deseq2(sample_counts, sample_metadata):
 
 
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+@pytest.mark.skipif(not _apeglm_available(), reason="apeglm not installed in R")
 def test_lfc_shrink_success(sample_counts, sample_metadata):
     """Verify the lfc_shrink pipeline integration."""
     from rosetta.wrappers.deseq2 import run_deseq2, get_results_names, lfc_shrink

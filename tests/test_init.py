@@ -11,7 +11,10 @@ def test_main_imports():
     assert hasattr(rb, 'deseq2')
     assert hasattr(rb, 'edger') 
     assert hasattr(rb, 'limma_voom')
-    assert hasattr(rb, 'enrichment')
+    assert hasattr(rb, 'enrich_go')
+    assert hasattr(rb, 'enrich_kegg')
+    assert hasattr(rb, 'enrich_pathway')
+    assert hasattr(rb, 'enrich_custom')
     assert hasattr(rb, 'phyloseq')
     assert hasattr(rb, 'phyloseq_richness')
     assert hasattr(rb, 'seurat')
@@ -27,7 +30,8 @@ def test_all_attribute():
     import rosetta
     
     expected = [
-        "deseq2", "edger", "limma_voom", "enrichment", 
+        "deseq2", "edger", "limma_voom", "enrichment",
+        "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
         "phyloseq", "phyloseq_richness", "seurat",
         "RDataError", "RFormulaError", "RPackageMissing"
     ]
@@ -43,7 +47,10 @@ def test_function_callability():
     assert callable(rb.deseq2)
     assert callable(rb.edger)
     assert callable(rb.limma_voom)
-    assert callable(rb.enrichment)
+    assert callable(rb.enrich_go)
+    assert callable(rb.enrich_kegg)
+    assert callable(rb.enrich_pathway)
+    assert callable(rb.enrich_custom)
     assert callable(rb.phyloseq)
     assert callable(rb.phyloseq_richness)
     assert callable(rb.seurat)
