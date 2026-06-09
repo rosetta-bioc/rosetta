@@ -119,7 +119,7 @@ def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
 
     deseq2_pkg = importr("DESeq2")
 
-with localconverter(_converter):
+    with localconverter(_converter):
         try:
             # We do not force assignment to res_obj, instead relying on the dds fit state.
             # However, for 'apeglm' or 'ashr' shrinkage types, ensure the required R packages are installed.
