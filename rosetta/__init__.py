@@ -1,5 +1,21 @@
 """rosetta — Seamless Python wrappers for R bioinformatics packages."""
 
+import importlib.metadata as _meta
+
+# Detect namespace collision with unrelated 'rosetta' PyPI package
+try:
+    _dist = _meta.distribution("rosetta")
+    if "bioinformatics" not in (_dist.metadata.get("Summary", "") + _dist.metadata.get("Keywords", "")).lower():
+        import warnings
+        warnings.warn(
+            "Both 'rosetta' and 'rosetta-bioc' are installed. "
+            "Run 'pip uninstall rosetta' to avoid import conflicts.",
+            ImportWarning,
+            stacklevel=2,
+        )
+except _meta.PackageNotFoundError:
+    pass
+
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
 from .wrappers.deseq2 import deseq2
