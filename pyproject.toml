@@ -3,9 +3,23 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rosetta"
+name = "rosetta-bioc"
 version = "0.1.0"
+description = "Pythonic API for R/Bioconductor statistical methods — calls validated R code, returns pandas DataFrames."
 requires-python = ">=3.9"
+license = "MIT"
+authors = [
+    {name = "John Muirhead-Gould", email = "john@nodes.bio"},
+    {name = "Catherine Chi Chung"},
+]
+keywords = ["bioinformatics", "R", "bioconductor", "DESeq2", "edgeR", "limma", "rpy2"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = [
     "rpy2>=3.5",
     "pandas>=1.5",
@@ -13,4 +27,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=7", "ruff>=0.5"]
+posit = ["rpy2>=3.5"]
+
+[project.urls]
+Homepage = "https://github.com/rosetta-bioc/rosetta"
+Documentation = "https://github.com/rosetta-bioc/rosetta#readme"
+Repository = "https://github.com/rosetta-bioc/rosetta"
+Issues = "https://github.com/rosetta-bioc/rosetta/issues"
+
+[tool.setuptools.packages.find]
+include = ["rosetta*"]
+exclude = ["tests*", "examples*"]

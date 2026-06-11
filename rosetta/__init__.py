@@ -1,6 +1,7 @@
 """rosetta — Seamless Python wrappers for R bioinformatics packages."""
 
 from ._errors import RDataError, RFormulaError, RPackageMissing
+from .results import RosettaDataFrame
 from .wrappers.deseq2 import deseq2
 from .wrappers.edger import edger
 from .wrappers.limma import limma_voom
@@ -12,8 +13,9 @@ from .wrappers.seurat import seurat
 enrichment = enrich_go
 
 __all__ = [
-    "deseq2", "edger", "limma_voom", "enrichment", 
+    "deseq2", "edger", "limma_voom", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
-    "phyloseq", "phyloseq_richness", "seurat", 
-    "RDataError", "RFormulaError", "RPackageMissing"
+    "phyloseq", "phyloseq_richness", "seurat",
+    "RosettaDataFrame",
+    "RDataError", "RFormulaError", "RPackageMissing",
 ]
