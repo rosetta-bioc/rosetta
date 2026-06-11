@@ -8,6 +8,7 @@ from .wrappers.limma import limma_voom
 from .wrappers.clusterprofiler import enrich_go, enrich_kegg, enrich_pathway, enrich_custom
 from .wrappers.phyloseq import phyloseq, phyloseq_richness
 from .wrappers.seurat import seurat
+from . import pipelines
 
 # Alias for backward compatibility
 enrichment = enrich_go
@@ -16,6 +17,7 @@ __all__ = [
     "deseq2", "edger", "limma_voom", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
     "phyloseq", "phyloseq_richness", "seurat",
+    "pipelines",
     "RosettaDataFrame",
     "RDataError", "RFormulaError", "RPackageMissing",
 ]
