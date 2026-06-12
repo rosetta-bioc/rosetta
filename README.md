@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon-square.svg" width="120" alt="Rosetta logo"/>
+</p>
+
 # 🪨 rosetta
 
 **Python interface to R/Bioconductor — pandas in, pandas out, `.report()` when you're done.**
