@@ -30,4 +30,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.description=Python + R + Bioconductor — rosetta-bioc pre-configured
+            org.opencontainers.image.source=https://github.com/rosetta-bioc/rosetta
