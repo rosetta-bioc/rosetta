@@ -143,4 +143,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled — start 
 
 Built on [rpy2](https://rpy2.github.io/) and the extraordinary R/Bioconductor ecosystem. All credit for the statistical methods goes to the original R package authors.
 
+**Supported by:**
+- **Google Summer of Code 2026** — funding Catherine's development work
+- **JPMorgan Chase** — startup banking and advisory through their Innovation Economy program
+- **AWS** — quantum computing infrastructure via Amazon Braket
+
 GSoC 2026 · MIT License · [Nodes Bio](https://nodes.bio)
