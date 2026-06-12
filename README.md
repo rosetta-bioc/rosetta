@@ -147,5 +147,6 @@ Built on [rpy2](https://rpy2.github.io/) and the extraordinary R/Bioconductor ec
 - **Google Summer of Code 2026** — funding Catherine's development work
 - **JPMorgan Chase** — startup banking and advisory through their Innovation Economy program
 - **AWS** — quantum computing infrastructure via Amazon Braket
+- **Nodes Bio, Inc.** — project lead, CI/hosting, and engineering
 
 GSoC 2026 · MIT License · [Nodes Bio](https://nodes.bio)
