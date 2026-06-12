@@ -1,41 +1,31 @@
 # Posit Cloud Setup
 
-Rosetta works in Posit Cloud (formerly RStudio Cloud) with minimal setup.
+## Recommended: Use Docker instead
 
-## Quick Start
-
-In a Posit Cloud Python project or Quarto notebook:
+Posit Cloud has known build issues with rpy2 (missing OpenMP library). For a guaranteed working environment:
 
 ```bash
+docker pull ghcr.io/rosetta-bioc/rosetta:latest
+docker run -it ghcr.io/rosetta-bioc/rosetta python3 -m rosetta
+```
+
+## If you must use Posit Cloud
+
+In the **Terminal** tab (not R Console):
+
+```bash
+sudo apt-get install -y libomp-dev
 pip install rosetta-bioc
+python3 -m rosetta
 ```
 
-Then create `install.R` to ensure Bioconductor packages are available:
-
-```r
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install(c("DESeq2", "edgeR", "limma", "clusterProfiler"), ask = FALSE)
-```
-
-Run once:
+Then install R packages:
 ```bash
-Rscript install.R
-```
-
-## Usage in Quarto
-
-```{python}
-import rosetta as rb
-
-# DESeq2 differential expression
-results = rb.run_deseq2(count_matrix, col_data, design="~ condition")
-sig = rb.get_results(results, alpha=0.05)
+Rscript -e "install.packages('BiocManager'); BiocManager::install(c('DESeq2','edgeR','limma'), ask=FALSE)"
 ```
 
 ## Notes
 
-- Posit Cloud uses Ubuntu + R 4.x — `rpy2` works out of the box
-- Bioconductor packages install to the project library (persists across sessions)
-- For large datasets, use a Posit Cloud Plus plan (more RAM)
+- The `libomp-dev` fix is needed because Posit Cloud's base image doesn't include OpenMP
+- If this still fails, use the Docker container — it has everything pre-configured
+- Free-tier Posit Cloud has limited RAM; large datasets may need a paid plan
