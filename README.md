@@ -44,6 +44,35 @@ That's it. No R code. No rpy2 boilerplate. No type conversion. Just results.
 
 All functions return a `RosettaDataFrame` (pandas DataFrame subclass) with a `.report()` method.
 
+## Not a toy — full design support
+
+- **Multi-factor designs:** `design="~ batch + condition"`, interaction terms, blocking factors
+- **LFC thresholds:** proper hypothesis testing via `lfcThreshold` (not post-hoc filtering)
+- **Shrinkage:** apeglm, ashr, normal — via `lfc_shrink()`
+- **Contrasts:** `contrast=["genotype", "mutant", "wildtype"]`
+- **QC/normalization/outliers:** DESeq2's size factors, Cook's distance, independent filtering all run normally — Rosetta doesn't hide the fitted object
+- **Weights, correlations:** limma-voom with `duplicateCorrelation`, sample weights — everything the R function accepts, Rosetta passes through
+
+## Show me the R code
+
+Don't trust a black box? Turn on `codegen` to see exactly what's running:
+
+```python
+import rosetta as rb
+rb.codegen.enable()
+
+dds = rb.wrappers.deseq2.run_deseq2(counts, meta, design="~ batch + condition")
+res = rb.wrappers.deseq2.get_results(dds, lfc_threshold=1.0)
+```
+```
+  R> library(DESeq2)
+  R> dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design=~ batch + condition)
+  R> dds <- DESeq(dds)
+  R> res <- results(dds, alpha=0.1, lfcThreshold=1.0)
+```
+
+`rb.codegen.last()` returns it as a string — paste into R to reproduce independently.
+
 ## Modular DESeq2 API
 
 For more control, use the step-by-step interface:
@@ -104,6 +133,7 @@ BiocManager::install(c("DESeq2", "edgeR", "limma", "clusterProfiler"))
 2. **Pandas in, pandas out.** No R objects leak into your Python workflow.
 3. **Fail early, fail clearly.** Input validation happens in Python before crossing the R boundary.
 4. **`.report()` everything.** Results should be immediately interpretable without manual inspection.
+5. **Show your work.** `codegen` prints the equivalent R code so you can verify, reproduce, or learn.
 
 ## Contributing
 
