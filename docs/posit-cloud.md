@@ -1,31 +1,20 @@
 # Posit Cloud Setup
 
-## Recommended: Use Docker instead
+## ⚠️ Posit Cloud is not supported
 
-Posit Cloud has known build issues with rpy2 (missing OpenMP library). For a guaranteed working environment:
+Posit Cloud's environment is missing system libraries (`libomp-dev`) required to build rpy2, and `sudo` is not available to install them.
+
+## Use Docker instead
 
 ```bash
 docker pull ghcr.io/rosetta-bioc/rosetta:latest
 docker run -it ghcr.io/rosetta-bioc/rosetta python3 -m rosetta
 ```
 
-## If you must use Posit Cloud
+This gives you Python + R + Bioconductor + rosetta-bioc, fully configured, in one pull.
 
-In the **Terminal** tab (not R Console):
+## Other options that work
 
-```bash
-sudo apt-get install -y libomp-dev
-pip install rosetta-bioc
-python3 -m rosetta
-```
-
-Then install R packages:
-```bash
-Rscript -e "install.packages('BiocManager'); BiocManager::install(c('DESeq2','edgeR','limma'), ask=FALSE)"
-```
-
-## Notes
-
-- The `libomp-dev` fix is needed because Posit Cloud's base image doesn't include OpenMP
-- If this still fails, use the Docker container — it has everything pre-configured
-- Free-tier Posit Cloud has limited RAM; large datasets may need a paid plan
+- **Local install:** `pip install rosetta-bioc` (requires R + Bioconductor already installed)
+- **GitHub Codespaces:** full sudo access, can install system deps
+- **Any Linux/macOS with R:** just works
