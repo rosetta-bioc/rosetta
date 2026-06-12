@@ -8,6 +8,7 @@ from rpy2.robjects.packages import importr
 from .._bridge import _converter, to_r_matrix, to_pandas, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
+from .. import codegen
 
 
 _SHRINK_METHODS = {"apeglm", "ashr", "normal"}
@@ -36,6 +37,10 @@ def _prepare_dds(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
 
     with localconverter(_converter):
         try:
+            codegen._block([
+                "library(DESeq2)",
+                f"dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design={design})",
+            ])
             return deseq2_pkg.DESeqDataSetFromMatrix(
                 countData=r_counts, colData=r_metadata, design=r_design
             )
@@ -73,6 +78,7 @@ def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     # 2. Perform statistical model fitting
     with localconverter(_converter):
         try:
+            codegen._emit("dds <- DESeq(dds)")
             return deseq2_pkg.DESeq(dds)
         except Exception as e:
             # Wrap R execution errors into RDataError for consistent error handling
@@ -121,6 +127,7 @@ def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
 
     with localconverter(_converter):
         try:
+            codegen._emit(f'res <- lfcShrink(dds, coef="{coef}", type="{type}")')
             # We do not force assignment to res_obj, instead relying on the dds fit state.
             # However, for 'apeglm' or 'ashr' shrinkage types, ensure the required R packages are installed.
             return to_pandas(to_r_df(
@@ -157,6 +164,9 @@ def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: f
             args["contrast"] = ro.StrVector(contrast)
 
         try:
+            contrast_str = f', contrast=c("{contrast[0]}", "{contrast[1]}", "{contrast[2]}")' if contrast else ""
+            lfc_str = f", lfcThreshold={lfc_threshold}" if lfc_threshold else ""
+            codegen._emit(f"res <- results(dds, alpha={alpha}{lfc_str}{contrast_str})")
             res = deseq2_pkg.results(dds, **args)
             return to_pandas(to_r_df(res))
         except Exception as e:

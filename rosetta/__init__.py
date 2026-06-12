@@ -25,6 +25,7 @@ from .wrappers.clusterprofiler import enrich_go, enrich_kegg, enrich_pathway, en
 from .wrappers.phyloseq import phyloseq, phyloseq_richness
 from .wrappers.seurat import seurat
 from . import pipelines
+from . import codegen
 
 # Alias for backward compatibility
 enrichment = enrich_go
