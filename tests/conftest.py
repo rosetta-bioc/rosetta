@@ -57,3 +57,12 @@ def custom_term2gene():
 def sample_genes():
     """Provides a standard list of gene identifiers for testing."""
     return ["TP53", "BRCA1", "EGFR"]
+
+@pytest.fixture
+def deseq2_result_df():
+    """Provides a standard DESeq2-like results DataFrame for GSEA testing."""
+    return pd.DataFrame({
+        'gene': ['GeneA', 'GeneB', 'GeneC', 'GeneD'],
+        'log2FoldChange': [1.5, -2.0, 0.5, 3.0],
+        'padj': [0.01, 0.05, 0.2, 0.001]
+    })
