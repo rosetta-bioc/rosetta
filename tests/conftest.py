@@ -49,11 +49,20 @@ def limma_fit_object():
 def custom_term2gene():
     """Provides a standard custom gene set mapping table for testing."""
     return pd.DataFrame({
-        "term": ["Pathway_A", "Pathway_A", "Pathway_B"],
-        "gene": ["TP53", "BRCA1", "PTEN"]
+        "term": ["Pathway_A", "Pathway_A", "Pathway_A", "Pathway_B"],
+        "gene": ["TP53", "BRCA1", "EGFR", "PTEN"]
     })
 
 @pytest.fixture
 def sample_genes():
     """Provides a standard list of gene identifiers for testing."""
     return ["TP53", "BRCA1", "EGFR"]
+
+@pytest.fixture
+def deseq2_result_df():
+    """Provides a standard DESeq2-like results DataFrame for GSEA testing."""
+    return pd.DataFrame({
+        'gene': ['GeneA', 'GeneB', 'GeneC', 'GeneD'],
+        'log2FoldChange': [1.5, -2.0, 0.5, 3.0],
+        'padj': [0.01, 0.05, 0.2, 0.001]
+    })
