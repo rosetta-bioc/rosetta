@@ -41,10 +41,14 @@ def to_r_dataframe(df: pd.DataFrame):
         return ro.conversion.get_conversion().py2rpy(df)
 
 
-def to_pandas(r_obj) -> pd.DataFrame:
-    """Convert R data.frame/matrix to pandas DataFrame."""
+def to_pandas(r_obj) -> "pd.DataFrame":
+    """Convert R data.frame/matrix to pandas DataFrame (with .report() method)."""
+    from .results import RosettaDataFrame
     with localconverter(_converter):
-        return ro.conversion.get_conversion().rpy2py(r_obj)
+        df = ro.conversion.get_conversion().rpy2py(r_obj)
+    if isinstance(df, pd.DataFrame):
+        return RosettaDataFrame(df)
+    return df
 
 
 def to_r_df(r_obj):
@@ -56,4 +60,5 @@ def to_r_df(r_obj):
 def r_nrow(r_obj):
     """Get nrow of an R object via base::nrow."""
     with localconverter(_converter):
-        return _get_base().nrow(r_obj)
+        result = _get_base().nrow(r_obj)
+        return int(result[0])  # Convert R vector to Python int

@@ -8,8 +8,14 @@ from rpy2.robjects.packages import importr
 from .._bridge import _converter, to_r_matrix, to_pandas, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
+from .. import codegen
+
+
+_SHRINK_METHODS = {"apeglm", "ashr", "normal"}
+
 
 # --- Private Helper Functions ---
+
 def _prepare_dds(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     """Internal helper to setup DESeqDataSet with error handling."""
     if (counts < 0).any().any():
@@ -20,7 +26,7 @@ def _prepare_dds(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     ensure_installed("DESeq2")
     deseq2_pkg = importr("DESeq2")
     stats_pkg = importr("stats")
-    
+
     try:
         r_design = stats_pkg.as_formula(design)
     except Exception as e:
@@ -31,12 +37,16 @@ def _prepare_dds(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
 
     with localconverter(_converter):
         try:
+            codegen._block([
+                "library(DESeq2)",
+                f"dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design={design})",
+            ])
             return deseq2_pkg.DESeqDataSetFromMatrix(
                 countData=r_counts, colData=r_metadata, design=r_design
             )
         except Exception as e:
-            # Here we wrap the R error into our custom RDataError
             raise RDataError(f"Failed to create DESeqDataSet: {e}") from e
+
 
 # --- Public API ---
 
@@ -68,6 +78,7 @@ def run_deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str):
     # 2. Perform statistical model fitting
     with localconverter(_converter):
         try:
+            codegen._emit("dds <- DESeq(dds)")
             return deseq2_pkg.DESeq(dds)
         except Exception as e:
             # Wrap R execution errors into RDataError for consistent error handling
@@ -78,7 +89,22 @@ def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str 
     """Parameter check: Fit the model and return available results names."""
     deseq2_pkg = importr("DESeq2")
     dds = _prepare_dds(counts, metadata, design)
-    
+
+    with localconverter(_converter):
+        try:
+            return deseq2_pkg.DESeq(dds)
+        except Exception as e:
+            raise RDataError(f"DESeq2 model fitting failed: {e}") from e
+
+
+def get_results_names(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition") -> list:
+    """Parameter check: Fit the model and return available results names.
+
+    Use this to discover valid coefficient names before calling lfc_shrink().
+    """
+    deseq2_pkg = importr("DESeq2")
+    dds = _prepare_dds(counts, metadata, design)
+
     with localconverter(_converter):
         try:
             dds = deseq2_pkg.DESeq(dds)
@@ -101,6 +127,7 @@ def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
 
     with localconverter(_converter):
         try:
+            codegen._emit(f'res <- lfcShrink(dds, coef="{coef}", type="{type}")')
             # We do not force assignment to res_obj, instead relying on the dds fit state.
             # However, for 'apeglm' or 'ashr' shrinkage types, ensure the required R packages are installed.
             return to_pandas(to_r_df(
@@ -116,25 +143,30 @@ def lfc_shrink(dds, coef: str, type: str = "apeglm", **kwargs) -> pd.DataFrame:
 def get_results(dds, contrast: list = None, lfc_threshold: float = 0.0, alpha: float = 0.1) -> pd.DataFrame:
     """
     Extract results from a fitted DESeqDataSet.
-    
+
+    For LFC shrinkage, call lfc_shrink() on the same dds object.
+
     Args:
-        dds: The fitted R DESeqDataSet object (from run_deseq2).
+        dds: The fitted R DESeqDataSet object (from run_deseq2()).
         contrast: A list defining the comparison [factor, numerator, denominator].
         lfc_threshold: Log2 fold change threshold (absolute).
         alpha: Significance cutoff (FDR).
+
+    Returns:
+        DataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
     """
     deseq2_pkg = importr("DESeq2")
-    
+
     with localconverter(_converter):
-        # Build arguments dictionary for results()
         args = {"alpha": alpha, "lfcThreshold": lfc_threshold}
-        
-        # Handle contrast if provided
+
         if contrast:
-            # R expects a character vector for contrast: c(factor, num, den)
             args["contrast"] = ro.StrVector(contrast)
-            
+
         try:
+            contrast_str = f', contrast=c("{contrast[0]}", "{contrast[1]}", "{contrast[2]}")' if contrast else ""
+            lfc_str = f", lfcThreshold={lfc_threshold}" if lfc_threshold else ""
+            codegen._emit(f"res <- results(dds, alpha={alpha}{lfc_str}{contrast_str})")
             res = deseq2_pkg.results(dds, **args)
             return to_pandas(to_r_df(res))
         except Exception as e:

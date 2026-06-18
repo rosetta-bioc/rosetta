@@ -14,6 +14,16 @@ def _deseq2_available():
         return False
 
 
+def _apeglm_available():
+    try:
+        from rosetta._deps import is_installed
+        return is_installed("apeglm")
+    except Exception:
+        return False
+
+
+# --- Input validation (no R required) ---
+
 def test_negative_counts_raises(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import deseq2
     bad_counts = sample_counts.copy()
@@ -35,6 +45,15 @@ def test_bad_formula_raises(sample_counts, sample_metadata):
         deseq2(sample_counts, sample_metadata, design="not a formula ~~~")
 
 
+def test_invalid_shrink_method_raises(sample_counts, sample_metadata):
+    from rosetta.wrappers.deseq2 import lfc_shrink
+    # lfc_shrink validates type before touching R — no dds needed
+    with pytest.raises(ValueError, match="Invalid shrinkage type"):
+        lfc_shrink(None, coef="condition_treated_vs_control", type="bad_method")
+
+
+# --- Full pipeline (requires DESeq2 in R) ---
+
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_deseq2_returns_dataframe(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import deseq2
@@ -48,9 +67,7 @@ def test_deseq2_returns_dataframe(sample_counts, sample_metadata):
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_get_results_names_success(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import get_results_names
-    
     names = get_results_names(sample_counts, sample_metadata, design="~ condition")
-    
     assert isinstance(names, list)
     assert "Intercept" in names
     assert any("condition" in name for name in names)
@@ -59,7 +76,6 @@ def test_get_results_names_success(sample_counts, sample_metadata):
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_get_results_names_bad_formula(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import get_results_names
-    # Since 'invalid' is not in metadata, this should raise RDataError.
     with pytest.raises(RDataError):
         get_results_names(sample_counts, sample_metadata, design="~ invalid")
 
@@ -67,7 +83,6 @@ def test_get_results_names_bad_formula(sample_counts, sample_metadata):
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
 def test_preview_design(sample_counts, sample_metadata):
     from rosetta.wrappers.deseq2 import preview_design
-    # Verify that dds can be initialized without crashing
     dds = preview_design(sample_counts, sample_metadata)
     assert dds is not None
 
@@ -82,6 +97,7 @@ def test_run_deseq2(sample_counts, sample_metadata):
 
 
 @pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
+@pytest.mark.skipif(not _apeglm_available(), reason="apeglm not installed in R")
 def test_lfc_shrink_success(sample_counts, sample_metadata):
     """Verify the lfc_shrink pipeline integration."""
     from rosetta.wrappers.deseq2 import run_deseq2, get_results_names, lfc_shrink

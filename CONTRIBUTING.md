@@ -3,7 +3,7 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/jmg421/rosetta.git
+git clone https://github.com/rosetta-bioc/rosetta.git
 cd rosetta
 pip install -e ".[dev]"
 ```

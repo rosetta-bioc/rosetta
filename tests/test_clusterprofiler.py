@@ -60,7 +60,7 @@ def test_enrich_kegg_returns_dataframe():
     assert "p.adjust" in result.columns
 
 # 3. Reactome Enrichment
-@pytest.mark.skipif(not _reactome_available(), reason="Needs ReactomePA")
+@pytest.mark.skipif(not _reactome_available(), reason="ReactomePA not installed")
 def test_enrich_pathway_returns_dataframe():
     genes = ["7157", "672", "1956"] 
     result = ORA.enrich_pathway(genes, pvalueCutoff=0.5)

@@ -12,7 +12,7 @@ from ..stats.design import build_contrast_matrix
 from ..stats.decide import run_decide_tests
 
 
-def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", **kwargs) -> pd.DataFrame:
+def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", contrast=None, decide_tests=False, **kwargs) -> pd.DataFrame:
     """Run limma-voom differential expression analysis.
 
     Args:
@@ -49,6 +49,7 @@ def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ co
         r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
         # --- Core Fitting Logic ---
         # Data prep: apply voom if RNA-seq counts are provided
+        use_voom = True  # Default to voom for RNA-seq data
         if use_voom:
             dge = edger_pkg.DGEList(counts=r_counts)
             dge = edger_pkg.calcNormFactors(dge)
