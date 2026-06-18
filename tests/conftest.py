@@ -49,8 +49,8 @@ def limma_fit_object():
 def custom_term2gene():
     """Provides a standard custom gene set mapping table for testing."""
     return pd.DataFrame({
-        "term": ["Pathway_A", "Pathway_A", "Pathway_B"],
-        "gene": ["TP53", "BRCA1", "PTEN"]
+        "term": ["Pathway_A", "Pathway_A", "Pathway_A", "Pathway_B"],
+        "gene": ["TP53", "BRCA1", "EGFR", "PTEN"]
     })
 
 @pytest.fixture
