@@ -47,21 +47,12 @@ def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ co
 
     with localconverter(_converter):
         r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
-        # --- Core Fitting Logic ---
-        # Data prep: apply voom if RNA-seq counts are provided
-        use_voom = True  # Default to voom for RNA-seq data
-        if use_voom:
-            dge = edger_pkg.DGEList(counts=r_counts)
-            dge = edger_pkg.calcNormFactors(dge)
-            # v follows a near-normal distribution after voom transformation
-            target = limma_pkg.voom(dge, r_design_matrix)
-        else:
-            # Use raw input if it's already continuous (e.g., proteomics)
-            target = r_counts
-
-        # Fit linear model
-        fit = limma_pkg.lmFit(target, r_design_matrix, **kwargs)
-        # --------------------------
+        # Use edgeR::voomLmFit (edgeR v4) — combines voom + lmFit in one
+        # optimized step. Recommended by Gordon Smyth over separate
+        # voom() + lmFit() calls.
+        dge = edger_pkg.DGEList(counts=r_counts)
+        dge = edger_pkg.calcNormFactors(dge)
+        fit = edger_pkg.voomLmFit(dge, r_design_matrix, **kwargs)
 
         # Handle contrast matrix using stats module
         if contrast:

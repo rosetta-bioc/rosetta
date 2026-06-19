@@ -44,7 +44,9 @@ def edger(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ conditi
         r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
         dge = edger_pkg.DGEList(counts=r_counts)
         dge = edger_pkg.calcNormFactors(dge)
-        dge = edger_pkg.estimateDisp(dge, r_design_matrix)
+        # Note: estimateDisp() skipped for the QL pipeline (edgeR v4).
+        # Per Gordon Smyth: it's the slowest step and only used for
+        # diagnostic plots, not for glmQLFit/glmQLFTest inference.
         fit = edger_pkg.glmQLFit(dge, r_design_matrix, **kwargs)
 
         # Prepare contrast object if provided
