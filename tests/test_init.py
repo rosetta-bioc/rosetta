@@ -30,10 +30,13 @@ def test_all_attribute():
     import rosetta
     
     expected = [
-        "deseq2", "edger", "limma_voom", "enrichment",
+        "deseq2", "edger", "limma_voom",
+        "ORA", "GSEA", "enrichment",
         "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
         "phyloseq", "phyloseq_richness", "seurat",
-        "RDataError", "RFormulaError", "RPackageMissing"
+        "pipelines", "codegen",
+        "RosettaDataFrame",
+        "RDataError", "RFormulaError", "RPackageMissing",
     ]
     
     assert hasattr(rosetta, '__all__')
