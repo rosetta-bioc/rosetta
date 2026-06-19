@@ -1,11 +1,17 @@
 """R session management and bidirectional type conversion."""
 
+import os
+import sys
+import contextlib
 import numpy as np
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects import numpy2ri, pandas2ri
-from rpy2.robjects.conversion import Converter, localconverter
-from rpy2.robjects.packages import importr
+
+# Suppress rpy2 ABI mode warning during import
+with contextlib.redirect_stderr(open(os.devnull, 'w')):
+    import rpy2.robjects as ro
+    from rpy2.robjects import numpy2ri, pandas2ri
+    from rpy2.robjects.conversion import Converter, localconverter
+    from rpy2.robjects.packages import importr
 
 _converter = Converter("rosetta")
 _converter += numpy2ri.converter
