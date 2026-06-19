@@ -35,6 +35,32 @@ LFC range:               [-4.71, 3.50]
 
 That's it. No R code. No rpy2 boilerplate. No type conversion. Just results.
 
+## Complete example — copy, paste, run
+
+```python
+import pandas as pd
+import numpy as np
+from rosetta import deseq2
+
+# Simulate RNA-seq counts: 1000 genes, 6 samples (3 control, 3 treated)
+np.random.seed(42)
+counts = pd.DataFrame(
+    np.random.negative_binomial(5, 0.1, size=(1000, 6)),
+    index=[f"gene_{i}" for i in range(1000)],
+    columns=["ctrl_1", "ctrl_2", "ctrl_3", "treat_1", "treat_2", "treat_3"],
+)
+
+metadata = pd.DataFrame(
+    {"condition": ["control"] * 3 + ["treated"] * 3},
+    index=counts.columns,
+)
+
+results = deseq2(counts=counts, metadata=metadata, design="~ condition")
+print(results.sort_values("padj").head(10))
+```
+
+Requires: Python 3.9+, R 4.0+, and Bioconductor's DESeq2 (`BiocManager::install("DESeq2")`).
+
 ## What it wraps
 
 | R Package | Python | What it does |
