@@ -1,13 +1,12 @@
 """R session management and bidirectional type conversion."""
 
 import os
-import sys
 import contextlib
 import numpy as np
 import pandas as pd
 
 # Suppress rpy2 ABI mode warning during import
-with contextlib.redirect_stderr(open(os.devnull, 'w')):
+with open(os.devnull, "w") as _devnull, contextlib.redirect_stderr(_devnull):
     import rpy2.robjects as ro
     from rpy2.robjects import numpy2ri, pandas2ri
     from rpy2.robjects.conversion import Converter, localconverter
