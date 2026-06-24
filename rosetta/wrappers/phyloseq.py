@@ -1,85 +1,58 @@
-"""phyloseq microbiome analysis wrapper."""
-
-from typing import Optional
-
 import pandas as pd
 import rpy2.robjects as ro
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects.packages import importr
+from typing import Optional, List, Dict, Any
 
 from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_pandas
 from .._deps import ensure_installed
 from .._errors import RDataError
 
+class Phyloseq:
+    """Class-based wrapper for phyloseq microbiome analysis."""
 
-def phyloseq(
-    otu_table: pd.DataFrame,
-    sample_data: Optional[pd.DataFrame] = None,
-    tax_table: Optional[pd.DataFrame] = None,
-) -> object:
-    """Create a phyloseq object from pandas DataFrames.
+    def __init__(self, otu_table: pd.DataFrame, sample_data: Optional[pd.DataFrame] = None, tax_table: Optional[pd.DataFrame] = None):
+        ensure_installed("phyloseq")
+        self.ps_pkg = importr("phyloseq")
+        self.methods_pkg = importr("methods")
+        self.base_pkg = importr("base")
+        self.obj = self._create_object(otu_table, sample_data, tax_table)
 
-    Args:
-        otu_table: OTU/ASV count matrix (taxa x samples).
-        sample_data: Sample metadata DataFrame.
-        tax_table: Taxonomy table DataFrame (taxa x ranks).
+    def _create_object(self, otu_table: pd.DataFrame, sample_data, tax_table):
+        """Initialize Phyloseq object with validation."""
+        if otu_table.empty:
+            raise RDataError("otu_table must not be empty")
+        
+        # Add this check here!
+        if (otu_table < 0).any().any():
+            raise RDataError("OTU table contains negative values")
+            
+        r_otu = to_r_matrix(otu_table)
+        with localconverter(_converter):
+            components = [self.ps_pkg.otu_table(r_otu, taxa_are_rows=True)]
+            if sample_data is not None:
+                components.append(self.ps_pkg.sample_data(to_r_dataframe(sample_data)))
+            if tax_table is not None:
+                # Assuming tax_table is handled as a standard matrix
+                components.append(self.ps_pkg.tax_table(to_r_matrix(tax_table)))
+            return self.ps_pkg.phyloseq(*components)
 
-    Returns:
-        rpy2 phyloseq object for further analysis.
-    """
-    if otu_table.empty:
-        raise RDataError("otu_table must not be empty")
-    if (otu_table < 0).any().any():
-        raise RDataError("OTU table contains negative values")
+    def estimate_richness(self, measures: Optional[List[str]] = None) -> pd.DataFrame:
+        """Calculate alpha diversity metrics."""
+        with localconverter(_converter):
+            kwargs = {"measures": ro.StrVector(measures)} if measures else {}
+            return to_pandas(self.ps_pkg.estimate_richness(self.obj, **kwargs))
 
-    ensure_installed("phyloseq")
-    ps_pkg = importr("phyloseq")
-
-    r_otu = to_r_matrix(otu_table)
-
-    with localconverter(_converter):
-        ps_otu = ps_pkg.otu_table(r_otu, taxa_are_rows=True)
-        components = [ps_otu]
-
-        if sample_data is not None:
-            r_sd = to_r_dataframe(sample_data)
-            ps_sd = ps_pkg.sample_data(r_sd)
-            components.append(ps_sd)
-
-        if tax_table is not None:
-            r_tax = to_r_matrix(tax_table)
-            ps_tax = ps_pkg.tax_table(r_tax)
-            components.append(ps_tax)
-
-        ps_obj = ps_pkg.phyloseq(*components)
-
-    return ps_obj
-
-
-def phyloseq_richness(
-    otu_table: pd.DataFrame,
-    sample_data: Optional[pd.DataFrame] = None,
-    measures: Optional[list] = None,
-) -> pd.DataFrame:
-    """Calculate alpha diversity metrics.
-
-    Args:
-        otu_table: OTU/ASV count matrix (taxa x samples).
-        sample_data: Sample metadata DataFrame.
-        measures: Diversity measures (e.g. ["Shannon", "Simpson", "Chao1"]).
-
-    Returns:
-        DataFrame with diversity metrics per sample.
-    """
-    ensure_installed("phyloseq")
-    ps_pkg = importr("phyloseq")
-
-    ps_obj = phyloseq(otu_table, sample_data)
-
-    with localconverter(_converter):
-        kwargs = {}
-        if measures:
-            kwargs["measures"] = ro.StrVector(measures)
-        r_df = ps_pkg.estimate_richness(ps_obj, **kwargs)
-
-    return to_pandas(r_df)
+    def run_ordination(self, method: str = "PCoA", distance: str = "bray", **kwargs) -> pd.DataFrame:
+        """Perform ordination analysis and return coordinates as a pandas DataFrame."""
+        with localconverter(_converter):
+            ord_obj = self.ps_pkg.ordinate(self.obj, method=method, distance=distance, **kwargs)
+            
+            # Extract the vectors (coordinates)
+            vectors = ord_obj.rx2("vectors")
+            
+            # Force conversion: Ensure the matrix is seen as a data.frame before pandas conversion
+            # Using base::as.data.frame ensures to_pandas() receives a standard tabular structure
+            df_r = self.base_pkg.as_data_frame(vectors)
+            
+            return to_pandas(df_r)
