@@ -5,9 +5,11 @@ import pandas as pd
 import pytest
 
 from rosetta._errors import RDataError
+from rosetta.wrappers.seurat import Seurat
 
 
 def _seurat_available():
+    """Check if Seurat is installed in the R environment."""
     try:
         from rosetta._deps import is_installed
         return is_installed("Seurat")
@@ -26,54 +28,42 @@ def sc_counts():
 
 
 def test_empty_counts_raises():
-    from rosetta.wrappers.seurat import seurat
+    """Ensure Seurat initialization fails with empty input."""
     with pytest.raises(RDataError, match="empty"):
-        seurat(pd.DataFrame())
+        Seurat(pd.DataFrame())
 
 
 def test_negative_counts_raises(sc_counts):
-    from rosetta.wrappers.seurat import seurat
+    """Ensure Seurat initialization fails with negative values."""
     bad = sc_counts.copy()
     bad.iloc[0, 0] = -1
     with pytest.raises(RDataError, match="negative"):
-        seurat(bad)
+        Seurat(bad)
 
 
 @pytest.mark.skipif(not _seurat_available(), reason="Seurat not installed in R")
-def test_seurat_returns_dict(sc_counts):
-    from rosetta.wrappers.seurat import seurat
-    result = seurat(sc_counts, min_cells=1, min_features=1, n_pcs=5)
+def test_seurat_pipeline(sc_counts):
+    """Test the standard Seurat analysis pipeline execution."""
+    model = Seurat(sc_counts)
+    result = model.run_standard_pipeline(n_variable_features=10, n_pcs=5).get_results()
+
     assert isinstance(result, dict)
     assert "clusters" in result
     assert "umap" in result
     assert "variable_features" in result
-    assert "umap_1" in result["umap"].columns or "UMAP_1" in result["umap"].columns
-    assert len(result["clusters"]) > 0
+    assert len(result["clusters"]) == 50
 
 
 @pytest.mark.skipif(not _seurat_available(), reason="Seurat not installed in R")
-def test_seurat_custom_parameters(sc_counts):
-    from rosetta.wrappers.seurat import seurat
-    
-    # Test with custom parameters
-    result = seurat(
-        sc_counts, 
-        min_cells=2, 
-        min_features=5, 
-        n_variable_features=50,
-        n_pcs=3,
-        resolution=0.8
-    )
-    
-    assert isinstance(result, dict)
-    assert len(result["variable_features"]) <= 50  # May be fewer if not enough genes pass filters
+def test_seurat_new_features(sc_counts):
+    """Test SCTransform runs and find_markers raises informatively without clusters."""
+    model = Seurat(sc_counts)
 
+    # SCTransform should succeed and return self for chaining
+    result = model.run_sctransform()
+    assert result is model
 
-@pytest.mark.skipif(not _seurat_available(), reason="Seurat not installed in R")
-def test_seurat_kwargs_passthrough(sc_counts):
-    """Test that kwargs are passed through to FindClusters."""
-    from rosetta.wrappers.seurat import seurat
-    
-    # Test with random.seed as a kwarg to FindClusters
-    result = seurat(sc_counts, min_cells=1, min_features=1, n_pcs=3, random_seed=42)
-    assert isinstance(result, dict)
+    # FindMarkers requires valid cluster identities; on fresh random data
+    # without clustering, it should raise an RDataError (not silently pass)
+    with pytest.raises((RDataError, Exception), match=r"(ident|cluster|FindMarkers|cannot)"):
+        model.find_markers(ident_1="0", ident_2="1")

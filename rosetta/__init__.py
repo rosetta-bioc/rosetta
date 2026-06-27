@@ -22,16 +22,16 @@ from .wrappers.deseq2 import deseq2
 from .wrappers.edger import edger
 from .wrappers.limma import limma_voom
 from .wrappers.clusterprofiler import ORA, GSEA
+from .wrappers.phyloseq import Phyloseq
+from .wrappers.seurat import Seurat
+from . import pipelines
+from . import codegen
 
 # Top-level convenience aliases for ORA methods
 enrich_go = ORA.enrich_go
 enrich_kegg = ORA.enrich_kegg
 enrich_pathway = ORA.enrich_pathway
 enrich_custom = ORA.enrich_custom
-from .wrappers.phyloseq import phyloseq, phyloseq_richness
-from .wrappers.seurat import seurat
-from . import pipelines
-from . import codegen
 
 # Alias for backward compatibility
 enrichment = ORA
@@ -40,7 +40,7 @@ __all__ = [
     "deseq2", "edger", "limma_voom",
     "ORA", "GSEA", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
-    "phyloseq", "phyloseq_richness", "seurat",
+    "Phyloseq", "Seurat",
     "pipelines", "codegen",
     "RosettaDataFrame",
     "RDataError", "RFormulaError", "RPackageMissing",
