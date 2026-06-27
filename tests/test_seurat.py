@@ -56,14 +56,14 @@ def test_seurat_pipeline(sc_counts):
 
 @pytest.mark.skipif(not _seurat_available(), reason="Seurat not installed in R")
 def test_seurat_new_features(sc_counts):
-    """Test SCTransform and FindMarkers integration."""
+    """Test SCTransform runs and find_markers raises informatively without clusters."""
     model = Seurat(sc_counts)
-    
-    # Verify SCTransform execution
-    model.run_sctransform()
-    
-    # Verify FindMarkers functionality
-    # Note: Requires defined clusters or ident_1/ident_2 parameters
-    # This acts as a basic API integration test
-    with pytest.raises(Exception): # May fail on random data without valid clusters
+
+    # SCTransform should succeed and return self for chaining
+    result = model.run_sctransform()
+    assert result is model
+
+    # FindMarkers requires valid cluster identities; on fresh random data
+    # without clustering, it should raise an RDataError (not silently pass)
+    with pytest.raises((RDataError, Exception), match=r"(ident|cluster|FindMarkers|cannot)"):
         model.find_markers(ident_1="0", ident_2="1")

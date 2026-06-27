@@ -12,6 +12,10 @@ class Phyloseq:
     """Class-based wrapper for phyloseq microbiome analysis."""
 
     def __init__(self, otu_table: pd.DataFrame, sample_data: Optional[pd.DataFrame] = None, tax_table: Optional[pd.DataFrame] = None):
+        if otu_table.empty:
+            raise RDataError("otu_table must not be empty")
+        if (otu_table < 0).any().any():
+            raise RDataError("OTU table contains negative values")
         ensure_installed("phyloseq")
         self.ps_pkg = importr("phyloseq")
         self.methods_pkg = importr("methods")
@@ -19,21 +23,13 @@ class Phyloseq:
         self.obj = self._create_object(otu_table, sample_data, tax_table)
 
     def _create_object(self, otu_table: pd.DataFrame, sample_data, tax_table):
-        """Initialize Phyloseq object with validation."""
-        if otu_table.empty:
-            raise RDataError("otu_table must not be empty")
-        
-        # Add this check here!
-        if (otu_table < 0).any().any():
-            raise RDataError("OTU table contains negative values")
-            
+        """Build the R phyloseq object from validated inputs."""
         r_otu = to_r_matrix(otu_table)
         with localconverter(_converter):
             components = [self.ps_pkg.otu_table(r_otu, taxa_are_rows=True)]
             if sample_data is not None:
                 components.append(self.ps_pkg.sample_data(to_r_dataframe(sample_data)))
             if tax_table is not None:
-                # Assuming tax_table is handled as a standard matrix
                 components.append(self.ps_pkg.tax_table(to_r_matrix(tax_table)))
             return self.ps_pkg.phyloseq(*components)
 

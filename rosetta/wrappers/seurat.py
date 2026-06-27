@@ -12,6 +12,10 @@ class Seurat:
     """Class-based wrapper for Seurat single-cell analysis pipeline."""
 
     def __init__(self, counts: pd.DataFrame):
+        if counts.empty:
+            raise RDataError("counts must not be empty")
+        if (counts < 0).any().any():
+            raise RDataError("Count matrix contains negative values")
         ensure_installed("Seurat")
         self.seurat_pkg = importr("Seurat")
         self.sobj_pkg = importr("SeuratObject")
@@ -21,11 +25,6 @@ class Seurat:
         self.obj = self._create_object(counts)
 
     def _create_object(self, counts: pd.DataFrame):
-        if counts.empty:
-            raise RDataError("counts must not be empty")
-        if (counts < 0).any().any():
-            raise RDataError("Count matrix contains negative values")
-
         r_counts = to_r_matrix(counts)
         with localconverter(_converter):
             return self.sobj_pkg.CreateSeuratObject(counts=r_counts)
@@ -51,21 +50,17 @@ class Seurat:
         return self
     
     def find_markers(self, ident_1: str, ident_2: str = None, group_by: str = None, **kwargs) -> pd.DataFrame:
-        """
-        Find differentially expressed markers between groups.
-        """
-        # if group for specific meta.data
-        if group_by:
-            with localconverter(_converter):
-                self.seurat_pkg.Idents(self.obj, value=group_by)
-        
+        """Find differentially expressed markers between groups."""
         with localconverter(_converter):
-            markers = self.seurat_pkg.FindMarkers(
-                self.obj, 
-                ident_1=ident_1, 
-                ident_2=ident_2, 
-                **kwargs
-            )
+            if group_by:
+                self.obj = ro.r("`Idents<-`")(self.obj, value=group_by)
+
+            find_kwargs = {"ident.1": ident_1}
+            if ident_2 is not None:
+                find_kwargs["ident.2"] = ident_2
+            find_kwargs.update(kwargs)
+
+            markers = self.seurat_pkg.FindMarkers(self.obj, **find_kwargs)
         return to_pandas(markers)
 
     def get_results(self) -> Dict[str, Any]:

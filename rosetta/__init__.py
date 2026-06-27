@@ -8,4 +8,5 @@ from .wrappers.clusterprofiler import ORA, GSEA
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 
-__all__ = ["deseq2", "edger", "limma_voom", "enrichment", "phyloseq", "phyloseq_richness", "seurat", "RDataError", "RFormulaError", "RPackageMissing"]
+__all__ = ["deseq2", "edger", "limma_voom", "ORA", "GSEA", "Phyloseq", "Seurat", "RDataError", "RFormulaError", "RPackageMissing"]
+
