@@ -46,7 +46,7 @@ def test_seurat_pipeline(sc_counts):
     """Test the standard Seurat analysis pipeline execution."""
     model = Seurat(sc_counts)
     result = model.run_standard_pipeline(n_variable_features=10, n_pcs=5).get_results()
-    
+
     assert isinstance(result, dict)
     assert "clusters" in result
     assert "umap" in result

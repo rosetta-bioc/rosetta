@@ -1,11 +1,16 @@
 """R session management and bidirectional type conversion."""
 
+import os
+import contextlib
 import numpy as np
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects import numpy2ri, pandas2ri
-from rpy2.robjects.conversion import Converter, localconverter
-from rpy2.robjects.packages import importr
+
+# Suppress rpy2 ABI mode warning during import
+with open(os.devnull, "w") as _devnull, contextlib.redirect_stderr(_devnull):
+    import rpy2.robjects as ro
+    from rpy2.robjects import numpy2ri, pandas2ri
+    from rpy2.robjects.conversion import Converter, localconverter
+    from rpy2.robjects.packages import importr
 
 _converter = Converter("rosetta")
 _converter += numpy2ri.converter
@@ -41,10 +46,14 @@ def to_r_dataframe(df: pd.DataFrame):
         return ro.conversion.get_conversion().py2rpy(df)
 
 
-def to_pandas(r_obj) -> pd.DataFrame:
-    """Convert R data.frame/matrix to pandas DataFrame."""
+def to_pandas(r_obj) -> "pd.DataFrame":
+    """Convert R data.frame/matrix to pandas DataFrame (with .report() method)."""
+    from .results import RosettaDataFrame
     with localconverter(_converter):
-        return ro.conversion.get_conversion().rpy2py(r_obj)
+        df = ro.conversion.get_conversion().rpy2py(r_obj)
+    if isinstance(df, pd.DataFrame):
+        return RosettaDataFrame(df)
+    return df
 
 
 def to_r_df(r_obj):
@@ -56,4 +65,5 @@ def to_r_df(r_obj):
 def r_nrow(r_obj):
     """Get nrow of an R object via base::nrow."""
     with localconverter(_converter):
-        return _get_base().nrow(r_obj)
+        result = _get_base().nrow(r_obj)
+        return int(result[0])  # Convert R vector to Python int
