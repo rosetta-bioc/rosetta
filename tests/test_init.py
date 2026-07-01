@@ -40,6 +40,8 @@ def test_all_attribute():
     import rosetta
     
     expected = [
+        # Metadata
+        "__version__",
         # Tier 3
         "deseq2", "edger", "limma_voom",
         "ORA", "GSEA", "enrichment",
@@ -47,7 +49,7 @@ def test_all_attribute():
         # Tier 2
         "Seurat", "Phyloseq",
         # Tier 1
-        "quick_seurat", "quick_phyloseq",
+        "quick_seurat", "quick_phyloseq", "quick_deseq2", "quick_edger",
         # Backward-compat aliases
         "phyloseq", "phyloseq_richness", "seurat",
         # Utilities

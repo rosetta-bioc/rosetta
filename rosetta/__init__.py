@@ -16,6 +16,12 @@ try:
 except _meta.PackageNotFoundError:
     pass
 
+from importlib.metadata import version as _get_version
+try:
+    __version__ = _get_version("rosetta-bioc")
+except Exception:
+    __version__ = "0.2.3.dev0"
+
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
 from .wrappers.deseq2 import deseq2
@@ -37,6 +43,44 @@ enrich_custom = ORA.enrich_custom
 enrichment = ORA
 
 # --- Tier 1: Quick API (Added for Week 5) ---
+
+def quick_deseq2(counts, metadata, design="~ condition", alpha=0.05, **kwargs):
+    """
+    Tier 1 API: Quick DESeq2 differential expression.
+    Fits the model and extracts results in one call.
+
+    Args:
+        counts: Gene count matrix (genes x samples).
+        metadata: Sample metadata DataFrame.
+        design: R formula string for the experimental design.
+        alpha: Significance cutoff (FDR).
+        **kwargs: Additional arguments passed to get_results().
+
+    Returns:
+        RosettaDataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
+    """
+    from .wrappers.deseq2 import run_deseq2, get_results
+    dds = run_deseq2(counts, metadata, design)
+    return get_results(dds, alpha=alpha, **kwargs)
+
+
+def quick_edger(counts, metadata, design="~ condition", **kwargs):
+    """
+    Tier 1 API: Quick edgeR quasi-likelihood differential expression.
+    Runs the full edgeR QL pipeline in one call.
+
+    Args:
+        counts: Gene count matrix (genes x samples).
+        metadata: Sample metadata DataFrame.
+        design: R formula string for the experimental design.
+        **kwargs: Additional arguments passed to edger().
+
+    Returns:
+        RosettaDataFrame with logFC, logCPM, F, PValue, FDR.
+    """
+    from .wrappers.edger import edger as _edger
+    return _edger(counts, metadata, design, **kwargs)
+
 
 def quick_seurat(counts, **kwargs):
     """
@@ -61,6 +105,8 @@ phyloseq_richness = quick_phyloseq
 # --- Exports ---
 
 __all__ = [
+    # Metadata
+    "__version__",
     # Tier 3 (Functional/Legacy)
     "deseq2", "edger", "limma_voom",
     "ORA", "GSEA", "enrichment",
@@ -68,7 +114,7 @@ __all__ = [
     # Tier 2 (Class-based)
     "Seurat", "Phyloseq",
     # Tier 1 (Quick API)
-    "quick_seurat", "quick_phyloseq",
+    "quick_deseq2", "quick_edger", "quick_seurat", "quick_phyloseq",
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",
     # Utilities

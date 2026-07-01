@@ -36,6 +36,7 @@ Homepage = "https://github.com/rosetta-bioc/rosetta"
 Documentation = "https://github.com/rosetta-bioc/rosetta#readme"
 Repository = "https://github.com/rosetta-bioc/rosetta"
 Issues = "https://github.com/rosetta-bioc/rosetta/issues"
+Changelog = "https://github.com/rosetta-bioc/rosetta/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["rosetta*"]
