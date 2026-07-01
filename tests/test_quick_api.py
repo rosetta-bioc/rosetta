@@ -29,3 +29,4 @@ def test_quick_phyloseq_api(sc_counts):
     result = quick_phyloseq(sc_counts, measures=["Shannon"])
     assert isinstance(result, pd.DataFrame)
     assert "Shannon" in result.columns
+

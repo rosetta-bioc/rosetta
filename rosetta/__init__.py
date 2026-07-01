@@ -47,11 +47,16 @@ def quick_seurat(counts, **kwargs):
 
 def quick_phyloseq(otu_table, sample_data=None, measures=["Shannon"], **kwargs):
     """
-    Tier 1 API: Quick Phyloseq analysis.
+    Tier 1 API: Quick phyloseq analysis.
     Computes alpha diversity metrics.
     """
     ps = Phyloseq(otu_table, sample_data=sample_data, **kwargs)
     return ps.estimate_richness(measures=measures)
+
+# Lowercase convenience aliases (backward compatibility with pre-class API)
+seurat = quick_seurat
+phyloseq = quick_phyloseq
+phyloseq_richness = quick_phyloseq
 
 # --- Exports ---
 
@@ -64,6 +69,8 @@ __all__ = [
     "Seurat", "Phyloseq",
     # Tier 1 (Quick API)
     "quick_seurat", "quick_phyloseq",
+    # Backward-compat aliases
+    "phyloseq", "phyloseq_richness", "seurat",
     # Utilities
     "pipelines", "codegen",
     "RosettaDataFrame",
