@@ -21,7 +21,8 @@ def sc_counts():
 def test_quick_seurat_api(sc_counts):
     """Test the Quick Seurat API functionality."""
     result = quick_seurat(sc_counts, n_pcs=2)
-    assert isinstance(result, dict)
+    from rosetta.quick_result import QuickResult
+    assert isinstance(result, QuickResult)
     assert "clusters" in result
 
 @pytest.mark.skipif(not _phyloseq_available(), reason="phyloseq not installed")
@@ -29,8 +30,10 @@ def test_quick_phyloseq_api(sc_counts):
     """Test the Quick Phyloseq API functionality."""
     # Verify the quick_phyloseq entry point calculates alpha diversity correctly
     result = quick_phyloseq(sc_counts, measures=["Shannon"])
-    assert isinstance(result, pd.DataFrame)
-    assert "Shannon" in result.columns
+    from rosetta.quick_result import QuickResult
+    assert isinstance(result, QuickResult)
+    assert "diversity" in result
+    assert "Shannon" in result["diversity"].columns
 
 
 # --- Tests for quick_deseq2 ---

@@ -24,6 +24,7 @@ except Exception:
 
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
+from .quick_result import QuickResult
 from .wrappers.deseq2 import deseq2
 from .wrappers.edger import edger
 from .wrappers.limma import limma_voom
@@ -32,6 +33,7 @@ from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 from . import pipelines
 from . import codegen
+from . import plots
 
 # Top-level convenience aliases for ORA methods
 enrich_go = ORA.enrich_go
@@ -85,17 +87,22 @@ def quick_edger(counts, metadata, design="~ condition", **kwargs):
 def quick_seurat(counts, **kwargs):
     """
     Tier 1 API: Quick Seurat analysis.
-    Executes standard pipeline and returns results dictionary.
+    Executes standard pipeline and returns QuickResult with dict-like access and .report().
     """
-    return Seurat(counts).run_standard_pipeline(**kwargs).get_results()
+    data = Seurat(counts).run_standard_pipeline(**kwargs).get_results()
+    metadata = {"pipeline": "standard", **kwargs}
+    return QuickResult(data=data, method="seurat", metadata=metadata)
 
 def quick_phyloseq(otu_table, sample_data=None, measures=["Shannon"], **kwargs):
     """
     Tier 1 API: Quick phyloseq analysis.
-    Computes alpha diversity metrics.
+    Computes alpha diversity metrics and returns QuickResult with .report().
     """
     ps = Phyloseq(otu_table, sample_data=sample_data, **kwargs)
-    return ps.estimate_richness(measures=measures)
+    diversity_df = ps.estimate_richness(measures=measures)
+    data = {"diversity": diversity_df, "measures": measures}
+    metadata = {"measures": measures}
+    return QuickResult(data=data, method="phyloseq", metadata=metadata)
 
 # Lowercase convenience aliases (backward compatibility with pre-class API)
 seurat = quick_seurat
@@ -118,8 +125,9 @@ __all__ = [
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",
     # Utilities
-    "pipelines", "codegen",
+    "pipelines", "codegen", "plots",
     "RosettaDataFrame",
+    "QuickResult",
     # Errors
     "RDataError", "RFormulaError", "RPackageMissing",
 ]
