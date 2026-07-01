@@ -7,7 +7,7 @@ def test_main_imports():
     """Test that all main functions can be imported from rosetta."""
     import rosetta as rb
     
-    # Test that all public functions are available
+    # Tier 3 (Functional/Legacy)
     assert hasattr(rb, 'deseq2')
     assert hasattr(rb, 'edger') 
     assert hasattr(rb, 'limma_voom')
@@ -15,11 +15,21 @@ def test_main_imports():
     assert hasattr(rb, 'enrich_kegg')
     assert hasattr(rb, 'enrich_pathway')
     assert hasattr(rb, 'enrich_custom')
+
+    # Tier 2 (Class-based)
+    assert hasattr(rb, 'Seurat')
+    assert hasattr(rb, 'Phyloseq')
+
+    # Tier 1 (Quick API)
+    assert hasattr(rb, 'quick_seurat')
+    assert hasattr(rb, 'quick_phyloseq')
+
+    # Backward-compat aliases
     assert hasattr(rb, 'phyloseq')
     assert hasattr(rb, 'phyloseq_richness')
     assert hasattr(rb, 'seurat')
     
-    # Test that all exception classes are available
+    # Exception classes
     assert hasattr(rb, 'RDataError')
     assert hasattr(rb, 'RFormulaError') 
     assert hasattr(rb, 'RPackageMissing')
@@ -30,12 +40,20 @@ def test_all_attribute():
     import rosetta
     
     expected = [
+        # Tier 3
         "deseq2", "edger", "limma_voom",
         "ORA", "GSEA", "enrichment",
         "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
+        # Tier 2
+        "Seurat", "Phyloseq",
+        # Tier 1
+        "quick_seurat", "quick_phyloseq",
+        # Backward-compat aliases
         "phyloseq", "phyloseq_richness", "seurat",
+        # Utilities
         "pipelines", "codegen",
         "RosettaDataFrame",
+        # Errors
         "RDataError", "RFormulaError", "RPackageMissing",
     ]
     
@@ -54,6 +72,8 @@ def test_function_callability():
     assert callable(rb.enrich_kegg)
     assert callable(rb.enrich_pathway)
     assert callable(rb.enrich_custom)
+    assert callable(rb.quick_seurat)
+    assert callable(rb.quick_phyloseq)
     assert callable(rb.phyloseq)
     assert callable(rb.phyloseq_richness)
     assert callable(rb.seurat)

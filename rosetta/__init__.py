@@ -36,12 +36,44 @@ enrich_custom = ORA.enrich_custom
 # Alias for backward compatibility
 enrichment = ORA
 
+# --- Tier 1: Quick API (Added for Week 5) ---
+
+def quick_seurat(counts, **kwargs):
+    """
+    Tier 1 API: Quick Seurat analysis.
+    Executes standard pipeline and returns results dictionary.
+    """
+    return Seurat(counts).run_standard_pipeline(**kwargs).get_results()
+
+def quick_phyloseq(otu_table, sample_data=None, measures=["Shannon"], **kwargs):
+    """
+    Tier 1 API: Quick phyloseq analysis.
+    Computes alpha diversity metrics.
+    """
+    ps = Phyloseq(otu_table, sample_data=sample_data, **kwargs)
+    return ps.estimate_richness(measures=measures)
+
+# Lowercase convenience aliases (backward compatibility with pre-class API)
+seurat = quick_seurat
+phyloseq = quick_phyloseq
+phyloseq_richness = quick_phyloseq
+
+# --- Exports ---
+
 __all__ = [
+    # Tier 3 (Functional/Legacy)
     "deseq2", "edger", "limma_voom",
     "ORA", "GSEA", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
-    "Phyloseq", "Seurat",
+    # Tier 2 (Class-based)
+    "Seurat", "Phyloseq",
+    # Tier 1 (Quick API)
+    "quick_seurat", "quick_phyloseq",
+    # Backward-compat aliases
+    "phyloseq", "phyloseq_richness", "seurat",
+    # Utilities
     "pipelines", "codegen",
     "RosettaDataFrame",
+    # Errors
     "RDataError", "RFormulaError", "RPackageMissing",
 ]

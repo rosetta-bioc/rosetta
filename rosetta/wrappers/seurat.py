@@ -8,6 +8,14 @@ from .._bridge import _converter, to_r_matrix, to_pandas, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError
 
+def _seurat_available():
+    """Check if Seurat is installed in the R environment."""
+    try:
+        from rosetta._deps import is_installed
+        return is_installed("Seurat")
+    except Exception:
+        return False
+
 class Seurat:
     """Class-based wrapper for Seurat single-cell analysis pipeline."""
 

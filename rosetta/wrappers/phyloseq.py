@@ -8,6 +8,14 @@ from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_pandas
 from .._deps import ensure_installed
 from .._errors import RDataError
 
+def _phyloseq_available():
+    """Check if phyloseq is installed in the R environment."""
+    try:
+        from rosetta._deps import is_installed
+        return is_installed("phyloseq")
+    except Exception:
+        return False
+
 class Phyloseq:
     """Class-based wrapper for phyloseq microbiome analysis."""
 
