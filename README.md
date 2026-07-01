@@ -8,7 +8,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/rosetta-bioc)](https://pypi.org/project/rosetta-bioc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-170%2B%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-75%20passing-brightgreen)]()
 
 ```bash
 pip install rosetta-bioc
@@ -34,6 +34,26 @@ LFC range:               [-4.71, 3.50]
 ```
 
 That's it. No R code. No rpy2 boilerplate. No type conversion. Just results.
+
+## Three-Tier API
+
+| Tier | Style | Functions | Use case |
+|------|-------|-----------|----------|
+| 1 — Quick | `quick_*()` | `quick_deseq2`, `quick_edger`, `quick_seurat`, `quick_phyloseq` | One-liners for notebooks |
+| 2 — Class-based | `Class()` | `Seurat()`, `Phyloseq()` | Stateful, chainable workflows |
+| 3 — Functional | `func()` | `run_deseq2()` + `get_results()`, `edger()`, `limma_voom()`, ORA, GSEA | Full control |
+
+```python
+# Tier 1 — quick: one call, done
+results = rb.quick_deseq2(counts_df, metadata_df, design="~ condition")
+
+# Tier 2 — class-based: build up state, chain methods
+seu = rb.Seurat(matrix).normalize().find_clusters().umap()
+
+# Tier 3 — functional: explicit steps, full access
+dds = rb.wrappers.deseq2.run_deseq2(counts, meta, design="~ batch + condition")
+res = rb.wrappers.deseq2.get_results(dds, lfc_threshold=1.0)
+```
 
 ## Complete example — copy, paste, run
 
@@ -63,14 +83,14 @@ Requires: Python 3.9+, R 4.0+, and Bioconductor's DESeq2 (`BiocManager::install(
 
 ## What it wraps
 
-| R Package | Python | What it does |
-|-----------|--------|--------------|
-| DESeq2 | `rb.deseq2()` | Differential expression (negative binomial) |
-| edgeR | `rb.edger()` | Quasi-likelihood differential expression |
-| limma | `rb.limma_voom()` | Linear models + TREAT significance |
-| clusterProfiler | `rb.enrich_go()` | GO/KEGG/Reactome pathway enrichment |
-| phyloseq | `rb.phyloseq()` | Microbiome diversity analysis |
-| Seurat | `rb.seurat()` | Single-cell RNA-seq |
+| R Package | Quick API | Class / Functional | What it does |
+|-----------|-----------|-------------------|--------------|
+| DESeq2 | `rb.quick_deseq2()` | `run_deseq2()` + `get_results()` | Differential expression (negative binomial) |
+| edgeR | `rb.quick_edger()` | `rb.edger()` | Quasi-likelihood differential expression |
+| limma | — | `rb.limma_voom()` | Linear models + TREAT significance |
+| clusterProfiler | — | `rb.enrich_go()`, GSEA | GO/KEGG/Reactome pathway enrichment |
+| phyloseq | `rb.quick_phyloseq()` | `Phyloseq()` | Microbiome diversity analysis |
+| Seurat | `rb.quick_seurat()` | `Seurat()` | Single-cell RNA-seq |
 
 All functions return a `RosettaDataFrame` (pandas DataFrame subclass) with a `.report()` method.
 
@@ -168,6 +188,11 @@ BiocManager::install(c("DESeq2", "edgeR", "limma", "clusterProfiler"))
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled — start with [Issue #1: `report()` enhancements](https://github.com/rosetta-bioc/rosetta/issues/1).
+
+## Contributors
+
+- **Catherine Chi Chung** — GSoC 2026 contributor
+- **Matias Salibian Barrera** — GSoC co-mentor, UBC Statistics
 
 ## Acknowledgments
 

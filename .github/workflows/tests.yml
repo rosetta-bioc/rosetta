@@ -1,0 +1,80 @@
+name: Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["**"]
+
+permissions: {}
+
+jobs:
+  # Full test suite — requires R + Bioconductor
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    name: Tests (Python ${{ matrix.python-version }})
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4"
+
+      - name: Cache R packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-${{ runner.os }}-4.4-${{ hashFiles('install.R') }}
+          restore-keys: |
+            r-${{ runner.os }}-4.4-
+
+      - name: Install R packages
+        run: Rscript install.R
+
+      - name: Install Python package
+        run: pip install -e '.[dev]'
+
+      - name: Run tests
+        run: pytest --junitxml=results.xml
+
+      - name: Report test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Pytest (Python ${{ matrix.python-version }})
+          path: results.xml
+          reporter: java-junit
+
+  # Fast pure-Python tests — no R needed
+  test-pure:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    name: Tests (pure Python)
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python package
+        run: pip install -e '.[dev]'
+
+      - name: Run pure-Python tests
+        run: pytest tests/test_errors.py tests/test_init.py --junitxml=results.xml
