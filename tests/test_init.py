@@ -44,6 +44,7 @@ def test_all_attribute():
         "__version__",
         # Tier 3
         "deseq2", "edger", "limma_voom",
+        "vst", "rlog", "tmm_normalize",
         "ORA", "GSEA", "enrichment",
         "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
         # Tier 2

@@ -28,6 +28,7 @@ from .quick_result import QuickResult
 from .wrappers.deseq2 import deseq2
 from .wrappers.edger import edger
 from .wrappers.limma import limma_voom
+from .wrappers.normalize import vst, rlog, tmm_normalize
 from .wrappers.clusterprofiler import ORA, GSEA
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
@@ -116,6 +117,7 @@ __all__ = [
     "__version__",
     # Tier 3 (Functional/Legacy)
     "deseq2", "edger", "limma_voom",
+    "vst", "rlog", "tmm_normalize",
     "ORA", "GSEA", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
     # Tier 2 (Class-based)
