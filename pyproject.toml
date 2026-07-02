@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rosetta-bioc"
-version = "0.2.2"
+version = "0.3.0"
 description = "Pythonic API for R/Bioconductor statistical methods — calls validated R code, returns pandas DataFrames."
 readme = "README.md"
 requires-python = ">=3.9"

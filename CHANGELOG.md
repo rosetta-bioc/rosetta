@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-01
+
 ### Added
-- Tier 1 Quick API: `quick_seurat`, `quick_phyloseq` (PR #21)
+- Tier 1 Quick API: `quick_deseq2`, `quick_edger`, `quick_seurat`, `quick_phyloseq`
+- `QuickResult` class with `.report()` for all Quick API functions
+- Plotting module: `volcano()`, `ma_plot()`, `pca()` with auto-detection of DESeq2/edgeR/limma columns
+- Normalization wrappers: `vst()`, `rlog()`, `tmm_normalize()`
+- VariantAnnotation module: `read_vcf`, `locate_variants`, `predict_coding`, `VCF` class
+- `__version__` attribute via importlib.metadata
+- CHANGELOG.md
+- CI test workflow (Python 3.9/3.12, R 4.4, cached Bioconductor packages)
+- mkdocs documentation site with 14 pages (API reference, guides, setup)
+- Distribution content (Biostars tutorial, SO answers, blog post, Twitter thread)
 - Backward-compat aliases: `rb.phyloseq`, `rb.seurat`, `rb.phyloseq_richness`
-- Three-Tier API organization in `__init__.py`
+
+### Fixed
+- `_phyloseq_available()` docstring and case-sensitive package name
+- `test_init.py` updated for Three-Tier `__all__` exports
+- README test count (was "170+", now accurate)
 
 ## [0.2.2] - 2026-06-26
 
