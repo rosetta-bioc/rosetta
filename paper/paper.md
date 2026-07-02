@@ -90,6 +90,8 @@ transparency and reproducibility.
 
 # Software Design
 
+![Rosetta architecture: Three-Tier Python API communicating with R/Bioconductor through a centralized bridge layer via rpy2.](architecture.svg){width="100%"}
+
 Rosetta is organized into a Three-Tier API that balances simplicity with control:
 
 - **Tier 1 (Quick API)**: Single-function entry points (`quick_deseq2`,
