@@ -32,6 +32,7 @@ from .wrappers.normalize import vst, rlog, tmm_normalize
 from .wrappers.clusterprofiler import ORA, GSEA
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
+from .wrappers.vcf import VCF
 from . import pipelines
 from . import codegen
 from . import plots
@@ -105,6 +106,57 @@ def quick_phyloseq(otu_table, sample_data=None, measures=["Shannon"], **kwargs):
     metadata = {"measures": measures}
     return QuickResult(data=data, method="phyloseq", metadata=metadata)
 
+def quick_locate_variants(filepath, genome="hg38", txdb=None, region="all"):
+    """
+    Tier 1 API: Read VCF and annotate variant locations in one call.
+
+    Args:
+        filepath: Path to VCF/VCF.gz/BCF file.
+        genome: Genome assembly name (e.g., "hg38", "hg19").
+        txdb: TxDb package name. Defaults to TxDb.Hsapiens.UCSC.<genome>.knownGene.
+        region: One of 'all', 'coding', 'intron', 'fiveUTR', 'threeUTR',
+                'intergenic', 'spliceSite', 'promoter'.
+
+    Returns:
+        DataFrame with CHROM, POS, LOCATION, QUERYID, TXID, GENEID.
+
+    Raises:
+        RDataError: If the file does not exist.
+    """
+    from .wrappers.variant_annotation import read_vcf, locate_variants
+
+    if txdb is None:
+        txdb = f"TxDb.Hsapiens.UCSC.{genome}.knownGene"
+    vcf = read_vcf(filepath, genome)
+    return locate_variants(vcf, txdb=txdb, region=region)
+
+
+def quick_predict_coding(filepath, genome="hg38", txdb=None, bsgenome=None):
+    """
+    Tier 1 API: Read VCF and predict coding consequences in one call.
+
+    Args:
+        filepath: Path to VCF/VCF.gz/BCF file.
+        genome: Genome assembly name (e.g., "hg38", "hg19").
+        txdb: TxDb package name. Defaults to TxDb.Hsapiens.UCSC.<genome>.knownGene.
+        bsgenome: BSgenome package name. Defaults to BSgenome.Hsapiens.UCSC.<genome>.
+
+    Returns:
+        DataFrame with CONSEQUENCE, REFCODON, VARCODON, REFAA, VARAA, GENEID.
+
+    Raises:
+        RDataError: If the file does not exist.
+    """
+    from .wrappers.variant_annotation import read_vcf, predict_coding
+
+    if txdb is None:
+        txdb = f"TxDb.Hsapiens.UCSC.{genome}.knownGene"
+    if bsgenome is None:
+        bsgenome = f"BSgenome.Hsapiens.UCSC.{genome}"
+    vcf = read_vcf(filepath, genome)
+    return predict_coding(vcf, txdb=txdb, bsgenome=bsgenome)
+
+
 # Lowercase convenience aliases (backward compatibility with pre-class API)
 seurat = quick_seurat
 phyloseq = quick_phyloseq
@@ -121,9 +173,10 @@ __all__ = [
     "ORA", "GSEA", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
     # Tier 2 (Class-based)
-    "Seurat", "Phyloseq",
+    "Seurat", "Phyloseq", "VCF",
     # Tier 1 (Quick API)
     "quick_deseq2", "quick_edger", "quick_seurat", "quick_phyloseq",
+    "quick_locate_variants", "quick_predict_coding",
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",
     # Utilities

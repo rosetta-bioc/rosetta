@@ -19,10 +19,13 @@ def test_main_imports():
     # Tier 2 (Class-based)
     assert hasattr(rb, 'Seurat')
     assert hasattr(rb, 'Phyloseq')
+    assert hasattr(rb, 'VCF')
 
     # Tier 1 (Quick API)
     assert hasattr(rb, 'quick_seurat')
     assert hasattr(rb, 'quick_phyloseq')
+    assert hasattr(rb, 'quick_locate_variants')
+    assert hasattr(rb, 'quick_predict_coding')
 
     # Backward-compat aliases
     assert hasattr(rb, 'phyloseq')
@@ -48,9 +51,10 @@ def test_all_attribute():
         "ORA", "GSEA", "enrichment",
         "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
         # Tier 2
-        "Seurat", "Phyloseq",
+        "Seurat", "Phyloseq", "VCF",
         # Tier 1
         "quick_seurat", "quick_phyloseq", "quick_deseq2", "quick_edger",
+        "quick_locate_variants", "quick_predict_coding",
         # Backward-compat aliases
         "phyloseq", "phyloseq_richness", "seurat",
         # Utilities
@@ -78,9 +82,12 @@ def test_function_callability():
     assert callable(rb.enrich_custom)
     assert callable(rb.quick_seurat)
     assert callable(rb.quick_phyloseq)
+    assert callable(rb.quick_locate_variants)
+    assert callable(rb.quick_predict_coding)
     assert callable(rb.phyloseq)
     assert callable(rb.phyloseq_richness)
     assert callable(rb.seurat)
+    assert callable(rb.VCF)
 
 
 def test_exception_inheritance():
