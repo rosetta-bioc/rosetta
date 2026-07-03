@@ -34,9 +34,11 @@ archive_doi: 10.5281/zenodo.21181564
 
 Rosetta is a Python library that provides a clean, pandas-native interface to
 R/Bioconductor statistical packages for genomics. It wraps validated R
-implementations of DESeq2, edgeR, limma, clusterProfiler, Seurat, phyloseq, and
-VariantAnnotation — handling all type conversion, R session management, and
-result formatting automatically. Users pass pandas DataFrames in and receive
+implementations of DESeq2 [@love2014moderated], edgeR [@robinson2010edger],
+limma [@ritchie2015limma], clusterProfiler [@wu2021clusterprofiler],
+Seurat [@hao2024dictionary], phyloseq [@mcmurdie2013phyloseq], and
+VariantAnnotation [@obenchain2014variantannotation] — handling all type
+conversion, R session management, and result formatting automatically. Users pass pandas DataFrames in and receive
 pandas DataFrames out, with a `.report()` method on every result for instant
 human-readable summaries.
 
@@ -190,7 +192,9 @@ authors for accuracy.
 # Acknowledgements
 
 This work was supported by Google Summer of Code 2026. We thank the authors of
-DESeq2, edgeR, limma, clusterProfiler, Seurat, phyloseq, and VariantAnnotation
+DESeq2 [@love2014moderated], edgeR [@robinson2010edger], limma [@ritchie2015limma],
+clusterProfiler [@wu2021clusterprofiler], Seurat [@hao2024dictionary],
+phyloseq [@mcmurdie2013phyloseq], and VariantAnnotation [@obenchain2014variantannotation]
 for their foundational R packages. We thank Amazon Web Services (AWS) for cloud
 computing support, and JPMorgan Chase for startup banking and advisory support
 through their Innovation Economy program.
