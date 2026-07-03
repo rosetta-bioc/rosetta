@@ -180,7 +180,8 @@ with ongoing contributions from the bioinformatics community.
 # AI Usage Disclosure
 
 Portions of this software were developed with assistance from AI coding tools
-(Kiro CLI / Claude). All AI-generated code was reviewed, tested, and validated
+(Kiro CLI, Claude, and Jarvis CLI — the last an AI coding tool developed by the
+lead author). All AI-generated code was reviewed, tested, and validated
 by the authors. The test suite (148 tests) provides automated verification of
 correctness. This paper was drafted with AI assistance and reviewed by all
 authors for accuracy.
@@ -189,7 +190,8 @@ authors for accuracy.
 
 This work was supported by Google Summer of Code 2026. We thank the authors of
 DESeq2, edgeR, limma, clusterProfiler, Seurat, phyloseq, and VariantAnnotation
-for their foundational R packages. We thank JPMorgan Chase for startup banking
-and advisory support through their Innovation Economy program.
+for their foundational R packages. We thank Amazon Web Services (AWS) for cloud
+computing support, and JPMorgan Chase for startup banking and advisory support
+through their Innovation Economy program.
 
 # References
