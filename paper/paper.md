@@ -10,11 +10,12 @@ tags:
   - rpy2
 authors:
   - name: John Muirhead-Gould
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0002-0470-5131
     affiliation: 1
   - name: Catherine Chi Chung
     affiliation: "1, 2"
   - name: Matias Salibian-Barrera
+    orcid: 0000-0003-1873-4611
     affiliation: 3
 affiliations:
   - name: Nodes Bio, Inc., United States
@@ -103,6 +104,39 @@ Rosetta is organized into a Three-Tier API that balances simplicity with control
 - **Tier 3 (Functional)**: Explicit step-by-step functions (`run_deseq2()`,
   `get_results()`, `lfc_shrink()`) that map closely to R function signatures.
   Designed for full control over parameters and intermediate objects.
+
+The tiers are not three ways of calling one function; they map to the natural
+paradigm of each workflow. Tabular, single-shot analyses such as bulk RNA-seq
+differential expression are exposed through the Quick and Functional tiers,
+while inherently stateful, iterative workflows such as single-cell (Seurat) and
+microbiome (Phyloseq) analysis are exposed as chainable classes. The same
+DESeq2 analysis can be run as a one-liner or unpacked into its component steps:
+
+```python
+import rosetta as rb
+
+# Tier 1 — one call, summary report
+rb.quick_deseq2(counts, metadata, design="~ condition").report()
+# DESeq2 Results Summary
+# ──────────────────────────────
+# Total genes tested:      200
+# Significant (padj<0.05): 30 (15.0%)
+#   ↑ Upregulated:         30
+#   ↓ Downregulated:       0
+# LFC range:               [1.71, 3.02]
+
+# Tier 3 — explicit control over intermediate objects
+from rosetta import run_deseq2, get_results
+dds = run_deseq2(counts, metadata, design="~ condition")
+res = get_results(dds, contrast=["condition", "treated", "control"], alpha=0.05)
+# res is a pandas DataFrame: baseMean, log2FoldChange, lfcSE, stat, pvalue, padj
+
+# Tier 2 — stateful, chainable workflow for iterative analyses
+from rosetta import Seurat
+markers = (Seurat(sc_counts)
+           .run_standard_pipeline()
+           .find_markers(ident_1="0", ident_2="1"))
+```
 
 Key architectural decisions:
 
