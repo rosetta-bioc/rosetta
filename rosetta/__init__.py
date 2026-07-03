@@ -25,7 +25,7 @@ except Exception:
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
 from .quick_result import QuickResult
-from .wrappers.deseq2 import deseq2
+from .wrappers.deseq2 import deseq2, run_deseq2, get_results, lfc_shrink
 from .wrappers.edger import edger
 from .wrappers.limma import limma_voom
 from .wrappers.normalize import vst, rlog, tmm_normalize
@@ -168,7 +168,8 @@ __all__ = [
     # Metadata
     "__version__",
     # Tier 3 (Functional/Legacy)
-    "deseq2", "edger", "limma_voom",
+    "deseq2", "run_deseq2", "get_results", "lfc_shrink",
+    "edger", "limma_voom",
     "vst", "rlog", "tmm_normalize",
     "ORA", "GSEA", "enrichment",
     "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",

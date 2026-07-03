@@ -46,7 +46,8 @@ def test_all_attribute():
         # Metadata
         "__version__",
         # Tier 3
-        "deseq2", "edger", "limma_voom",
+        "deseq2", "run_deseq2", "get_results", "lfc_shrink",
+        "edger", "limma_voom",
         "vst", "rlog", "tmm_normalize",
         "ORA", "GSEA", "enrichment",
         "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
