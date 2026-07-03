@@ -123,7 +123,7 @@ rb.quick_deseq2(counts, metadata, design="~ condition").report()
 # Significant (padj<0.05): 30 (15.0%)
 #   ↑ Upregulated:         30
 #   ↓ Downregulated:       0
-# LFC range:               [1.71, 3.02]
+# LFC range:               [1.57, 3.07]
 
 # Tier 3 — explicit control over intermediate objects
 from rosetta import run_deseq2, get_results
