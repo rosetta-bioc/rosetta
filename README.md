@@ -9,6 +9,7 @@
 [![PyPI](https://img.shields.io/pypi/v/rosetta-bioc)](https://pypi.org/project/rosetta-bioc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-75%20passing-brightgreen)]()
+[![DOI](https://zenodo.org/badge/latestdoi/rosetta-bioc/rosetta)](https://zenodo.org/badge/latestdoi/rosetta-bioc/rosetta)
 
 ```bash
 pip install rosetta-bioc

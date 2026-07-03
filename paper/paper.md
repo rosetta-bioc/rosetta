@@ -27,6 +27,7 @@ affiliations:
     ror: "03rmrcq20"
 date: 1 July 2026
 bibliography: paper.bib
+archive_doi: 10.5281/zenodo.XXXXXXX  # TODO: replace after Zenodo release
 ---
 
 # Summary
