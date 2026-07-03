@@ -20,7 +20,7 @@ authors:
 affiliations:
   - name: Nodes Bio, Inc., United States
     index: 1
-  - name: Google Summer of Code 2026
+  - name: Humphreys University, Stockton, California, United States
     index: 2
   - name: Department of Statistics, University of British Columbia, Canada
     index: 3
