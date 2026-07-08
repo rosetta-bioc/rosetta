@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rosetta._bridge import to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
+from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
 from rosetta._errors import RDataError
-
+import rpy2.robjects as ro
 
 def test_dataframe_roundtrip(sample_counts):
     r_df = to_r_dataframe(sample_counts)
@@ -102,3 +102,52 @@ def test_matrix_conversion_preserves_row_col_names(sample_counts):
     
     # The matrix should preserve the structure for later conversion
     assert r_mat is not None
+
+
+"""Tests for Tier 3 Escape Hatch in BaseWrapper."""
+
+# Create a mock wrapper for testing
+class MockWrapper(BaseWrapper):
+    def __init__(self, obj):
+        super().__init__(obj, None)
+
+@pytest.fixture
+def mock_ps_obj():
+    """Create a simple R object to simulate a wrapped object."""
+    # Create a simple R matrix
+    return ro.r.matrix(ro.IntVector([1, 2, 3, 4]), nrow=2)
+
+def test_getattr_delegation(mock_ps_obj):
+    """Ensure attributes are delegated to the underlying R object."""
+    wrapper = MockWrapper(mock_ps_obj)
+    
+    # Test attribute access (e.g., 'nrow' is an attribute of an R matrix)
+    # Note: R objects in rpy2 usually expose properties via __getattr__
+    assert wrapper.nrow == 2
+    assert wrapper.ncol == 2
+
+def test_run_r_script_execution(mock_ps_obj):
+    """Test executing arbitrary R code with object injection."""
+    wrapper = MockWrapper(mock_ps_obj)
+    
+    # Test script that calculates the sum of the matrix and returns it
+    result = wrapper.run_r_script("sum(obj)")
+    
+    # sum(1,2,3,4) = 10
+    assert result[0] == 10
+
+def test_run_r_script_with_kwargs(mock_ps_obj):
+    """Test script execution with additional injected variables."""
+    wrapper = MockWrapper(mock_ps_obj)
+    
+    # Test script using both 'obj' (the matrix) and 'multiplier' (injected via kwargs)
+    result = wrapper.run_r_script("sum(obj) * multiplier", multiplier=2)
+    
+    # 10 * 2 = 20
+    assert result[0] == 20
+
+def test_getattr_error_handling(mock_ps_obj):
+    """Ensure non-existent attributes raise AttributeError."""
+    wrapper = MockWrapper(mock_ps_obj)
+    with pytest.raises(AttributeError):
+        wrapper.non_existent_method()
