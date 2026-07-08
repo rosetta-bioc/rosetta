@@ -6,7 +6,7 @@ from rosetta.utils import filter_kwargs
 from rosetta._errors import RDataError
 from typing import Dict, Any
 
-from .._bridge import _converter, to_r_matrix, to_pandas, to_r_df
+from .._bridge import _converter, to_r_matrix, to_pandas, to_r_df, BaseWrapper
 from .._deps import ensure_installed
 from .._errors import RDataError
 
@@ -18,7 +18,7 @@ def _seurat_available():
     except Exception:
         return False
 
-class Seurat:
+class Seurat(BaseWrapper):
     """Class-based wrapper for Seurat single-cell analysis pipeline."""
     # 1. Class-level parameter allowlists
     _PARAMS_NORMALIZE = {"normalization.method", "scale.factor", "verbose"}
@@ -29,19 +29,20 @@ class Seurat:
     _PARAMS_FIND_CLUSTERS = {"resolution", "algorithm", "verbose", "random.seed"}
 
     def __init__(self, counts: pd.DataFrame):
-        # 2. Validation and Setup
         if counts.empty:
             raise RDataError("counts must not be empty")
         if (counts < 0).any().any():
             raise RDataError("Count matrix contains negative values")
         
         ensure_installed("Seurat")
-        self.seurat_pkg = importr("Seurat")
+        seurat_pkg = importr("Seurat")
         self.sobj_pkg = importr("SeuratObject")
-        self.base_pkg = importr("base")
         self.methods_pkg = importr("methods")
         
-        self.obj = self._create_object(counts)
+        obj = self._create_object(counts)
+        
+        super().__init__(obj, seurat_pkg)
+        self.seurat_pkg = seurat_pkg
 
     # 3. Business logic methods
     def run_umap(self, **kwargs):
@@ -61,9 +62,7 @@ class Seurat:
         return self
     
     def run_normalize(self, **kwargs):
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_NORMALIZE)
-        self.obj = self.seurat_pkg.NormalizeData(self.obj, **r_kwargs)
-        return self
+        return self._call_r("NormalizeData", self._PARAMS_NORMALIZE, **kwargs)
 
     def run_find_variable_features(self, **kwargs):
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_VARIABLE_FEATURES)
@@ -83,17 +82,13 @@ class Seurat:
 
     def run_pca(self, **kwargs):
         """Run PCA on the Seurat object."""
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_PCA)
-        self.obj = self.seurat_pkg.RunPCA(self.obj, **r_kwargs)
-        return self
+        return self._call_r("RunPCA", self._PARAMS_PCA, **kwargs)
 
     def run_find_neighbors(self, **kwargs):
         """Find neighbors for clustering."""
         if "k_param" in kwargs:
             kwargs["k.param"] = kwargs.pop("k_param")
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_FIND_NEIGHBORS)
-        self.obj = self.seurat_pkg.FindNeighbors(self.obj, **r_kwargs)
-        return self
+        return self._call_r("FindNeighbors", self._PARAMS_FIND_NEIGHBORS, **kwargs)
 
     def run_find_clusters(self, **kwargs):
         """Run graph-based clustering."""

@@ -1,174 +1,86 @@
 """clusterProfiler gene set enrichment wrapper."""
 
-from typing import List, Any
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects.conversion import localconverter
+from typing import Any
 from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+from rosetta._bridge import BaseWrapper, _converter, to_pandas, to_r_df
+from rosetta.utils.kwargs import filter_kwargs
+from rosetta._deps import ensure_installed
+from rosetta._errors import RDataError
 
-from .._bridge import _converter, to_pandas, to_r_df
-from .._deps import ensure_installed
-from .._errors import RDataError
-
-def _run_r_enrichment(func_name: str, library: str = "clusterProfiler", **kwargs) -> pd.DataFrame:
+class ClusterProfiler(BaseWrapper):
     """
-    Internal generic wrapper to execute clusterProfiler R functions.
-
-    Args:
-        func_name: The name of the clusterProfiler function to execute.
-        **kwargs: Arguments to pass to the R function.
-
-    Returns:
-        A pandas DataFrame containing the enrichment analysis results.
+    Class-based wrapper for clusterProfiler enrichment analysis.
+    Provides a standardized interface for ORA and GSEA workflows.
     """
-    ensure_installed(library)
-    pkg = importr(library)
 
-    # Define a mapping to automatically handle parameter name differences in R.
-    # ORA functions typically use 'gene', while GSEA functions use 'geneList'.
-    if func_name.startswith("gse"):
-        # For GSEA, ensure the input is passed as 'geneList'
-        if "gene" in kwargs:
-            kwargs["geneList"] = kwargs.pop("gene")
-    
-    # check if gene is empty
-    gene_arg = kwargs.get("gene") or kwargs.get("geneList")
-    if gene_arg is None:
-        raise RDataError("gene_list must not be empty")
-    
-    # Dynamically retrieve the R function from the clusterProfiler package
-    r_func = getattr(pkg, func_name)
+    def __init__(self, library: str = "clusterProfiler"):
+        """Initialize the wrapper with the required R library."""
+        ensure_installed(library)
+        self.cp_pkg = importr(library)
+        # Inherit from BaseWrapper; obj is set to None for stateless enrichment tools
+        super().__init__(None, self.cp_pkg)
 
-    with localconverter(_converter):
-        # Handle automatic conversion of Python types (List, dict, etc.) to R types
-        result = r_func(**kwargs)
-
-    return to_pandas(to_r_df(result))
-
-class ORA:
-    @staticmethod
-    def enrich_go(
-        gene_list: List[str], 
-        organism: str = "org.Hs.eg.db", 
-        ont: str = "BP", 
-        pvalue_cutoff: float = 0.05, 
-        min_gs_size: int = 10, 
-        max_gs_size: int = 500,
-        **kwargs
-    ) -> pd.DataFrame:
-        """Run Gene Ontology (GO) enrichment analysis."""
-        kwargs.update({
-            "OrgDb": organism,
-            "ont": ont,
-            "pvalueCutoff": pvalue_cutoff,
-            "minGSSize": min_gs_size,
-            "maxGSSize": max_gs_size
-        })
-        return _run_r_enrichment("enrichGO", gene=gene_list, **kwargs)
-
-    @staticmethod
-    def enrich_kegg(
-        gene_list: List[str], 
-        organism: str = "hsa", 
-        pvalue_cutoff: float = 0.05, 
-        min_gs_size: int = 10, 
-        max_gs_size: int = 500,
-        **kwargs
-    ) -> pd.DataFrame:
-        """Run KEGG pathway enrichment analysis."""
-        kwargs.update({
-            "organism": organism,
-            "pvalueCutoff": pvalue_cutoff,
-            "minGSSize": min_gs_size,
-            "maxGSSize": max_gs_size
-        })
-        return _run_r_enrichment("enrichKEGG", gene=gene_list, **kwargs)
-
-    @staticmethod
-    def enrich_pathway(gene_list: List[str], **kwargs) -> pd.DataFrame:
-        """Run Reactome pathway enrichment analysis."""
-        return _run_r_enrichment("enrichPathway", library="ReactomePA", gene=gene_list, **kwargs)
-
-    @staticmethod
-    def enrich_custom(
-        gene_list: List[str], 
-        term2gene: pd.DataFrame, 
-        min_gs_size: int = 10, 
-        max_gs_size: int = 500, 
-        **kwargs
-    ) -> pd.DataFrame:
-        """Run custom enrichment analysis."""
-        # Explicitly pack parameters into a dictionary to ensure they are not missed when passed to R
-        r_params = {
-            "gene": gene_list,
-            "TERM2GENE": term2gene,
-            "minGSSize": min_gs_size,
-            "maxGSSize": max_gs_size,
-        }
-        # Merge any additional parameters
-        r_params.update(kwargs)
+    def _run_enrich(self, func_name: str, gene_data: Any, **kwargs) -> pd.DataFrame:
+        """Internal execution method with automatic parameter mapping."""
+        if gene_data is None or (isinstance(gene_data, (list, pd.Series)) and len(gene_data) == 0):
+            raise RDataError("Input gene list is empty")
         
-        return _run_r_enrichment("enricher", **r_params)
+        # 1. Parameter Mapping (Python snake_case -> R CamelCase)
+        # This fixes the unused argument errors
+        param_map = {
+            "pvalue_cutoff": "pvalueCutoff",
+            "min_gs_size": "minGSSize",
+            "max_gs_size": "maxGSSize"
+        }
+        for snake, camel in param_map.items():
+            if snake in kwargs:
+                kwargs[camel] = kwargs.pop(snake)
 
+        # 2. Key Mapping
+        key = "geneList" if func_name.startswith("gse") else "gene"
+        kwargs[key] = gene_data
+        
+        # 3. Execution
+        with localconverter(_converter):
+            r_func = getattr(self.cp_pkg, func_name)
+            res = r_func(**kwargs)
+            return to_pandas(to_r_df(res))
 
-class GSEA:
+    # --- ORA (Over-Representation Analysis) Interface ---
+
+    def enrich_go(self, gene_list: Any, organism: str = "org.Hs.eg.db", **kwargs) -> pd.DataFrame:
+        """Perform Gene Ontology (GO) enrichment analysis."""
+        kwargs.update({"OrgDb": organism})
+        return self._run_enrich("enrichGO", gene_list, **kwargs)
+
+    def enrich_kegg(self, gene_list: Any, organism: str = "hsa", **kwargs) -> pd.DataFrame:
+        """Perform KEGG pathway enrichment analysis."""
+        kwargs.update({"organism": organism})
+        return self._run_enrich("enrichKEGG", gene_list, **kwargs)
+
+    # --- GSEA (Gene Set Enrichment Analysis) Interface ---
+
+    def gse_go(self, gene_list: Any, organism: str = "org.Hs.eg.db", **kwargs) -> pd.DataFrame:
+        """Perform GSEA using Gene Ontology."""
+        kwargs.update({"OrgDb": organism})
+        return self._run_enrich("gseGO", gene_list, **kwargs)
+
     @staticmethod
     def prepare_gene_list(df: pd.DataFrame, gene_col: str, fc_col: str = "log2FoldChange") -> pd.Series:
         """
-        Convert DESeq2 results into a sorted named numeric vector for GSEA.
+        Convert differential expression results into a sorted named numeric vector for GSEA.
         
         Args:
-            df: DataFrame from get_results() (e.g., index contains gene symbols).
-            gene_col: Column name for gene IDs (or 'index' if using the dataframe index).
-            fc_col: The log2FoldChange column name.
+            df: DataFrame containing log2FoldChange values.
+            gene_col: Column name containing gene IDs.
+            fc_col: Column name for fold change values.
         """
-        # 1. Handle if gene IDs are in the index
         if gene_col == "index":
             df = df.reset_index()
-            # After resetting, the index column is now named 'index' 
-            # (or whatever the original index name was)
-            gene_col = "index" 
+            gene_col = "index"
             
-        # 2. Filter out missing values
         df = df.dropna(subset=[fc_col])
-        
-        # 3. Sort by Fold Change descending (required for GSEA)
         df = df.sort_values(by=fc_col, ascending=False)
-        
-        # 4. Create named series
-        gene_list = df.set_index(gene_col)[fc_col]
-        return gene_list
-    
-    @staticmethod
-    def gse_go(
-        gene_list: pd.Series, 
-        organism: str = "org.Hs.eg.db", 
-        ont: str = "BP", 
-        pvalue_cutoff: float = 0.05, 
-        eps: float = 1e-10, 
-        **kwargs
-    ) -> pd.DataFrame:
-        """Run GSEA using Gene Ontology with significance filtering."""
-        kwargs.update({
-            "OrgDb": organism,
-            "ont": ont,
-            "pvalueCutoff": pvalue_cutoff,
-            "eps": eps  # Adding eps to handle numerical stability
-        })
-        return _run_r_enrichment("gseGO", geneList=gene_list, **kwargs)
-
-    @staticmethod
-    def gse_kegg(
-        gene_list: pd.Series, 
-        organism: str = "hsa", 
-        pvalue_cutoff: float = 0.05, 
-        eps: float = 1e-10, 
-        **kwargs
-    ) -> pd.DataFrame:
-        """Run GSEA using KEGG pathways with significance filtering."""
-        kwargs.update({
-            "organism": organism,
-            "pvalueCutoff": pvalue_cutoff,
-            "eps": eps
-        })
-        return _run_r_enrichment("gseKEGG", geneList=gene_list, **kwargs)
+        return df.set_index(gene_col)[fc_col]

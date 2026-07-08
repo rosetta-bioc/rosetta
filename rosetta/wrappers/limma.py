@@ -5,68 +5,76 @@ import rpy2.robjects as ro
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects.packages import importr
 
-from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_pandas, r_nrow
-from .._deps import ensure_installed
-from .._errors import RDataError, RFormulaError
-from ..stats.design import build_contrast_matrix
-from ..stats.decide import run_decide_tests
+from rosetta._bridge import BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, r_nrow
+from rosetta.utils.kwargs import filter_kwargs
+from rosetta._deps import ensure_installed
+from rosetta._errors import RDataError, RFormulaError
+from rosetta.stats.design import build_contrast_matrix
+from rosetta.stats.decide import run_decide_tests
 
+class Limma(BaseWrapper):
+    """Class-based wrapper for Limma-Voom differential expression analysis."""
 
-def limma_voom(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", contrast=None, decide_tests=False, **kwargs) -> pd.DataFrame:
-    """Run limma-voom differential expression analysis.
+    _PARAMS_VOOMLMFIT = {"block", "correlation", "weights", "sample.weights", "span", "plot"}
+    _PARAMS_EBAYES = {"trend", "robust", "proportion", "winsor.tail.p"}
+    _PARAMS_TOPTABLE = {"coef", "number", "adjust.method", "p.value", "lfc"}
 
-    Args:
-        counts: Gene count matrix (genes x samples) with non-negative integers.
-        metadata: Sample metadata DataFrame with row names matching counts columns.
-        design: R formula string for the experimental design.
-        **kwargs: Additional arguments passed to limma::lmFit().
+    def __init__(self, counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
+        ensure_installed("limma")
+        ensure_installed("edgeR")
+        
+        self.limma_pkg = importr("limma")
+        self.edger_pkg = importr("edgeR")
+        stats_pkg = importr("stats")
 
-    Returns:
-        DataFrame with logFC, AveExpr, t, P.Value, adj.P.Val, B.
-    """
-    if (counts < 0).any().any():
-        raise RDataError("Count matrix contains negative values")
-    if not set(counts.columns).issubset(set(metadata.index)):
-        raise RDataError("Count matrix columns must match metadata row names")
+        # 1. Fitting logic
+        obj = self._fit_model(counts, metadata, design, stats_pkg)
+        
+        # 2. call BaseWrapper
+        super().__init__(obj, self.limma_pkg)
 
-    stats_pkg = importr("stats")
-    with localconverter(_converter):
+    def _fit_model(self, counts, metadata, design, stats_pkg):
+        """Encapsulated model fitting logic."""
+        if (counts < 0).any().any():
+            raise RDataError("Count matrix contains negative values")
+        if not set(counts.columns).issubset(set(metadata.index)):
+            raise RDataError("Count matrix columns must match metadata row names")
+
         try:
-            stats_pkg.as_formula(design)
+            r_design_formula = ro.Formula(design)
+            r_counts = to_r_matrix(counts)
+            r_metadata = to_r_dataframe(metadata)
+            r_design_matrix = stats_pkg.model_matrix(r_design_formula, data=r_metadata)
         except Exception as e:
-            raise RFormulaError(f"Invalid design formula '{design}': {e}") from e
+            raise RFormulaError(f"Invalid design formula '{design}': {e}")
 
-    ensure_installed("limma")
-    ensure_installed("edgeR")
+        with localconverter(_converter):
+            dge = self.edger_pkg.DGEList(counts=r_counts)
+            dge = self.edger_pkg.calcNormFactors(dge)
+            # voomLmFit
+            return self.edger_pkg.voomLmFit(dge, r_design_matrix)
 
-    limma_pkg = importr("limma")
-    edger_pkg = importr("edgeR")
+    def apply_contrasts(self, contrast: list):
+        """Apply contrast matrix to fitted model."""
+        with localconverter(_converter):
+            design_matrix = self.obj.rx2("design") 
+            design_colnames = design_matrix.colnames
+            
+            contrast_mat = build_contrast_matrix(design_colnames, contrast)
+            self.obj = self.limma_pkg.contrasts_fit(self.obj, contrast_mat)
+        return self
+    
+    def run_ebayes(self, **kwargs):
+        """Perform empirical Bayes moderation."""
+        # use call_r to process eBayes
+        return self._call_r("eBayes", self._PARAMS_EBAYES, **kwargs)
 
-    r_counts = to_r_matrix(counts)
-    r_metadata = to_r_dataframe(metadata)
-
-    with localconverter(_converter):
-        r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
-        # Use edgeR::voomLmFit (edgeR v4) — combines voom + lmFit in one
-        # optimized step. Recommended by Gordon Smyth over separate
-        # voom() + lmFit() calls.
-        dge = edger_pkg.DGEList(counts=r_counts)
-        dge = edger_pkg.calcNormFactors(dge)
-        fit = edger_pkg.voomLmFit(dge, r_design_matrix, **kwargs)
-
-        # Handle contrast matrix using stats module
-        if contrast:
-            contrast_mat = build_contrast_matrix(r_design_matrix.colnames, contrast)
-            fit = limma_pkg.contrasts_fit(fit, contrast_mat)
-        
-        # Empirical Bayes moderation
-        fit = limma_pkg.eBayes(fit)
-        
-        # Determine significant genes using stats module
-        if decide_tests:
-            fit.results = run_decide_tests(fit)
-
-        # Extract results
-        r_df = limma_pkg.topTable(fit, number=r_nrow(r_counts))
-
-    return to_pandas(r_df)
+    def get_results(self, **kwargs) -> pd.DataFrame:
+        """Extract results using topTable."""
+        r_kwargs = filter_kwargs(kwargs, self._PARAMS_TOPTABLE)
+        if "number" not in r_kwargs:
+            r_kwargs["number"] = r_nrow(self.obj)
+            
+        with localconverter(_converter):
+            res = self.limma_pkg.topTable(self.obj, **r_kwargs)
+            return to_pandas(res)

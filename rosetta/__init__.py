@@ -18,25 +18,20 @@ except _meta.PackageNotFoundError:
 
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
-from .wrappers.deseq2 import deseq2
-from .wrappers.edger import edger
-from .wrappers.limma import limma_voom
-from .wrappers.clusterprofiler import ORA, GSEA
+from .wrappers.deseq2 import DESeq2
+from .wrappers.edger import EdgeR
+from .wrappers.limma import Limma
+from .wrappers.clusterprofiler import ClusterProfiler
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 from . import pipelines
 from . import codegen
 
-# Top-level convenience aliases for ORA methods
 def enrich_go(*args, **kwargs):
-    from .wrappers.clusterprofiler import ORA
-    return ORA.enrich_go(*args, **kwargs)
-enrich_kegg = ORA.enrich_kegg
-enrich_pathway = ORA.enrich_pathway
-enrich_custom = ORA.enrich_custom
+    return ClusterProfiler().enrich_go(*args, **kwargs)
 
-# Alias for backward compatibility
-enrichment = ORA
+def enrich_kegg(*args, **kwargs):
+    return ClusterProfiler().enrich_kegg(*args, **kwargs)
 
 # --- Tier 1: Quick API (Added for Week 5) ---
 
