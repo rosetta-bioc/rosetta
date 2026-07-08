@@ -28,7 +28,9 @@ from . import pipelines
 from . import codegen
 
 # Top-level convenience aliases for ORA methods
-enrich_go = ORA.enrich_go
+def enrich_go(*args, **kwargs):
+    from .wrappers.clusterprofiler import ORA
+    return ORA.enrich_go(*args, **kwargs)
 enrich_kegg = ORA.enrich_kegg
 enrich_pathway = ORA.enrich_pathway
 enrich_custom = ORA.enrich_custom
