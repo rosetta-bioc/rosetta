@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="system-ui, -apple-system, sans-serif">
+  <!-- Background -->
+  <rect width="900" height="520" fill="#fafafa"/>
+  
+  <!-- Title -->
+  <text x="450" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a1a">Rosetta Architecture — Three-Tier API with R/Bioconductor Bridge</text>
+  
+  <!-- Python Side (left) -->
+  <rect x="30" y="60" width="420" height="440" rx="12" fill="#e8f4fd" stroke="#2196F3" stroke-width="1.5" opacity="0.4"/>
+  <text x="240" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#1565C0">Python</text>
+  
+  <!-- R Side (right) -->
+  <rect x="480" y="60" width="390" height="440" rx="12" fill="#fce4ec" stroke="#e53935" stroke-width="1.5" opacity="0.4"/>
+  <text x="675" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#b71c1c">R / Bioconductor</text>
+  
+  <!-- User Input -->
+  <rect x="60" y="105" width="160" height="50" rx="8" fill="#ffffff" stroke="#455a64" stroke-width="1.5"/>
+  <text x="140" y="127" text-anchor="middle" font-size="11" fill="#455a64">pandas DataFrame</text>
+  <text x="140" y="143" text-anchor="middle" font-size="10" fill="#78909c">(counts, metadata)</text>
+  
+  <!-- Tier 1 -->
+  <rect x="60" y="180" width="370" height="65" rx="8" fill="#e3f2fd" stroke="#1976D2" stroke-width="1.5"/>
+  <text x="80" y="200" font-size="11" font-weight="bold" fill="#1565C0">Tier 1 — Quick API</text>
+  <text x="80" y="218" font-size="10" fill="#37474f" font-family="monospace">quick_deseq2()  quick_edger()  quick_seurat()</text>
+  <text x="80" y="234" font-size="10" fill="#37474f" font-family="monospace">quick_phyloseq()  quick_locate_variants()</text>
+  
+  <!-- Tier 2 -->
+  <rect x="60" y="260" width="370" height="55" rx="8" fill="#e8eaf6" stroke="#3949AB" stroke-width="1.5"/>
+  <text x="80" y="280" font-size="11" font-weight="bold" fill="#283593">Tier 2 — Class-based</text>
+  <text x="80" y="298" font-size="10" fill="#37474f" font-family="monospace">Seurat()  Phyloseq()  VCF()  ORA()  GSEA()</text>
+  
+  <!-- Tier 3 -->
+  <rect x="60" y="330" width="370" height="55" rx="8" fill="#ede7f6" stroke="#5E35B1" stroke-width="1.5"/>
+  <text x="80" y="350" font-size="11" font-weight="bold" fill="#4527A0">Tier 3 — Functional</text>
+  <text x="80" y="368" font-size="10" fill="#37474f" font-family="monospace">run_deseq2() → get_results() → lfc_shrink()</text>
+  
+  <!-- Bridge -->
+  <rect x="100" y="405" width="290" height="50" rx="8" fill="#fff3e0" stroke="#f57c00" stroke-width="1.5"/>
+  <text x="245" y="425" text-anchor="middle" font-size="11" font-weight="bold" fill="#e65100">Bridge Layer</text>
+  <text x="245" y="442" text-anchor="middle" font-size="10" fill="#37474f" font-family="monospace">_bridge.py · _converter · codegen</text>
+  
+  <!-- rpy2 -->
+  <rect x="430" y="405" width="90" height="50" rx="8" fill="#ffecb3" stroke="#ffa000" stroke-width="2"/>
+  <text x="475" y="435" text-anchor="middle" font-size="12" font-weight="bold" fill="#e65100">rpy2</text>
+  
+  <!-- R Packages -->
+  <rect x="510" y="110" width="340" height="280" rx="8" fill="#ffffff" stroke="#c62828" stroke-width="1"/>
+  <text x="680" y="135" text-anchor="middle" font-size="12" font-weight="bold" fill="#b71c1c">Bioconductor Packages</text>
+  
+  <!-- Individual R packages -->
+  <rect x="530" y="150" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="595" y="171" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">DESeq2</text>
+  
+  <rect x="680" y="150" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="745" y="171" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">edgeR</text>
+  
+  <rect x="530" y="195" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="595" y="216" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">limma</text>
+  
+  <rect x="680" y="195" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="745" y="216" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">clusterProfiler</text>
+  
+  <rect x="530" y="240" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="595" y="261" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">Seurat</text>
+  
+  <rect x="680" y="240" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="745" y="261" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">phyloseq</text>
+  
+  <rect x="530" y="285" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="595" y="306" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">VariantAnnotation</text>
+  
+  <rect x="680" y="285" width="130" height="32" rx="6" fill="#ffcdd2" stroke="#e53935" stroke-width="1"/>
+  <text x="745" y="306" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">GenomicRanges</text>
+  
+  <!-- R Session -->
+  <rect x="580" y="340" width="180" height="40" rx="6" fill="#ef9a9a" stroke="#c62828" stroke-width="1"/>
+  <text x="670" y="365" text-anchor="middle" font-size="11" fill="#b71c1c" font-weight="bold">R Session (embedded)</text>
+  
+  <!-- Output -->
+  <rect x="60" y="472" width="200" height="45" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="160" y="493" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">RosettaDataFrame</text>
+  <text x="160" y="508" text-anchor="middle" font-size="10" fill="#558b2f">.report() · pandas-native</text>
+  
+  <!-- Codegen Output -->
+  <rect x="280" y="472" width="150" height="45" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="355" y="493" text-anchor="middle" font-size="11" font-weight="bold" fill="#6a1b9a">codegen</text>
+  <text x="355" y="508" text-anchor="middle" font-size="10" fill="#7b1fa2">equivalent R script</text>
+  
+  <!-- Arrows: User → Tier 1 -->
+  <path d="M 140 155 L 140 178" fill="none" stroke="#455a64" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <!-- Arrows: Tiers cascade -->
+  <path d="M 245 245 L 245 258" fill="none" stroke="#3949AB" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-sm)"/>
+  <path d="M 245 315 L 245 328" fill="none" stroke="#5E35B1" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-sm)"/>
+  
+  <!-- Arrow: Tier 3 → Bridge -->
+  <path d="M 245 385 L 245 403" fill="none" stroke="#f57c00" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <!-- Arrow: Bridge → rpy2 -->
+  <path d="M 390 430 L 428 430" fill="none" stroke="#f57c00" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- Arrow: rpy2 → R Session -->
+  <path d="M 520 430 L 578 365" fill="none" stroke="#e53935" stroke-width="2" marker-end="url(#arrow-red)"/>
+  
+  <!-- Arrow: R Session → Packages -->
+  <path d="M 670 340 L 670 320" fill="none" stroke="#c62828" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  
+  <!-- Arrow: Bridge → Output (return path) -->
+  <path d="M 200 455 L 170 472" fill="none" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  
+  <!-- Arrow: Bridge → Codegen -->
+  <path d="M 300 455 L 340 472" fill="none" stroke="#7b1fa2" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M 0 0 L 8 3 L 0 6 Z" fill="#455a64"/>
+    </marker>
+    <marker id="arrow-sm" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+      <path d="M 0 0 L 6 2.5 L 0 5 Z" fill="#5E35B1"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M 0 0 L 8 3 L 0 6 Z" fill="#e53935"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M 0 0 L 8 3 L 0 6 Z" fill="#2e7d32"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M 0 0 L 8 3 L 0 6 Z" fill="#7b1fa2"/>
+    </marker>
+  </defs>
+  
+  <!-- Labels on arrows -->
+  <text x="465" y="420" text-anchor="middle" font-size="9" fill="#e65100">calls</text>
+  <text x="555" y="395" text-anchor="middle" font-size="9" fill="#c62828">executes</text>
+  <text x="140" y="170" text-anchor="middle" font-size="9" fill="#455a64">input</text>
+</svg>
