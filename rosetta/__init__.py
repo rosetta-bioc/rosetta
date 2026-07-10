@@ -37,14 +37,11 @@ from . import pipelines
 from . import codegen
 from . import plots
 
-# Top-level convenience aliases for ORA methods
-enrich_go = ORA.enrich_go
-enrich_kegg = ORA.enrich_kegg
-enrich_pathway = ORA.enrich_pathway
-enrich_custom = ORA.enrich_custom
+def enrich_go(*args, **kwargs):
+    return ClusterProfiler().enrich_go(*args, **kwargs)
 
-# Alias for backward compatibility
-enrichment = ORA
+def enrich_kegg(*args, **kwargs):
+    return ClusterProfiler().enrich_kegg(*args, **kwargs)
 
 # --- Tier 1: Quick API (Added for Week 5) ---
 

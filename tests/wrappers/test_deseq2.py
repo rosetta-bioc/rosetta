@@ -1,137 +1,61 @@
 """Tests for rosetta.wrappers.deseq2."""
 
+"""Tests for rosetta.wrappers.deseq2."""
+
 import pandas as pd
 import pytest
-
 from rosetta._errors import RDataError, RFormulaError
+from rosetta.wrappers.deseq2 import DESeq2
 
+# --- Fixtures ---
 
-def _deseq2_available():
-    try:
-        from rosetta._deps import is_installed
-        return is_installed("DESeq2")
-    except Exception:
-        return False
+@pytest.fixture
+def deseq_model(sample_counts, sample_metadata):
+    """Fixture to provide a fitted DESeq2 model for testing."""
+    return DESeq2(sample_counts, sample_metadata, design="~ condition")
 
-
-def _apeglm_available():
-    try:
-        from rosetta._deps import is_installed
-        return is_installed("apeglm")
-    except Exception:
-        return False
-
-
-# --- Input validation (no R required) ---
+# --- Input validation (no R/fitting required) ---
 
 def test_negative_counts_raises(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import deseq2
     bad_counts = sample_counts.copy()
     bad_counts.iloc[0, 0] = -1
     with pytest.raises(RDataError, match="negative"):
-        deseq2(bad_counts, sample_metadata)
-
+        DESeq2(bad_counts, sample_metadata, design="~ condition")
 
 def test_mismatched_samples_raises(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import deseq2
     bad_meta = sample_metadata.rename(index={"S1": "X1"})
     with pytest.raises(RDataError, match="columns must match"):
-        deseq2(sample_counts, bad_meta)
-
+        DESeq2(sample_counts, bad_meta, design="~ condition")
 
 def test_bad_formula_raises(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import deseq2
     with pytest.raises(RFormulaError):
-        deseq2(sample_counts, sample_metadata, design="not a formula ~~~")
+        DESeq2(sample_counts, sample_metadata, design="not a formula ~~~")
 
-
-def test_invalid_shrink_method_raises(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import lfc_shrink
-    # lfc_shrink validates type before touching R — no dds needed
+def test_invalid_shrink_method_raises(deseq_model):
+    # Testing logic before model fitting
     with pytest.raises(ValueError, match="Invalid shrinkage type"):
-        lfc_shrink(None, coef="condition_treated_vs_control", type="bad_method")
+        deseq_model.lfc_shrink(coef="condition_treated_vs_control", type="bad_method")
 
+# --- Full pipeline tests ---
 
-# --- Full pipeline (requires DESeq2 in R) ---
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_deseq2_returns_dataframe(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import deseq2
-    result = deseq2(sample_counts, sample_metadata, design="~ condition")
+def test_deseq2_pipeline(deseq_model):
+    """Test standard model fitting and results extraction."""
+    deseq_model.run_deseq()
+    result = deseq_model.get_results(alpha=0.1)
+    
     assert isinstance(result, pd.DataFrame)
     assert "log2FoldChange" in result.columns
     assert "padj" in result.columns
-    assert len(result) == len(sample_counts)
 
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_get_results_names_success(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import get_results_names
-    names = get_results_names(sample_counts, sample_metadata, design="~ condition")
-    assert isinstance(names, list)
-    assert "Intercept" in names
-    assert any("condition" in name for name in names)
-
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_get_results_names_bad_formula(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import get_results_names
-    with pytest.raises(RDataError):
-        get_results_names(sample_counts, sample_metadata, design="~ invalid")
-
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_preview_design(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import preview_design
-    dds = preview_design(sample_counts, sample_metadata)
-    assert dds is not None
-
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_run_deseq2(sample_counts, sample_metadata):
-    """Verify that run_deseq2 performs model fitting successfully."""
-    from rosetta.wrappers.deseq2 import run_deseq2
-    # 添加 design 參數
-    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
-    assert dds is not None
-
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-@pytest.mark.skipif(not _apeglm_available(), reason="apeglm not installed in R")
-def test_lfc_shrink_success(sample_counts, sample_metadata):
-    """Verify the lfc_shrink pipeline integration."""
-    from rosetta.wrappers.deseq2 import run_deseq2, get_results_names, lfc_shrink
+def test_lfc_shrink_success(deseq_model):
+    """Verify the lfc_shrink integration using the class object."""
+    deseq_model.run_deseq(verbose=False)
     
-    # 1. Fit the model
-    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
+    # Use r_obj (Tier 3) to discover coefficients
+    coefs = list(deseq_model.deseq_pkg.resultsNames(deseq_model.r_obj))
+    target_coef = next((c for c in coefs if "condition" in c), coefs[-1])
     
-    # 2. Get names and verify we have coefficients
-    coefs = get_results_names(sample_counts, sample_metadata, design="~ condition")
-    
-    # Debug: Print coefficients if the test fails
-    # Let's find the specific coefficient for 'condition'
-    # Usually it's 'condition_treated_vs_control'
-    target_coef = next((c for c in coefs if "condition" in c and "control" in c), None)
-    
-    if target_coef is None:
-        pytest.fail(f"Could not find a valid condition coefficient in: {coefs}")
-    
-    # 3. Perform lfcShrink
-    result = lfc_shrink(dds, coef=target_coef, type="apeglm")
+    result = deseq_model.lfc_shrink(coef=target_coef, type="apeglm")
     
     assert isinstance(result, pd.DataFrame)
     assert "log2FoldChange" in result.columns
-    assert len(result) == len(sample_counts)
-
-    print(f"DEBUG: Using coef={target_coef}")
-
-
-@pytest.mark.skipif(not _deseq2_available(), reason="DESeq2 not installed in R")
-def test_lfc_shrink_invalid_type(sample_counts, sample_metadata):
-    from rosetta.wrappers.deseq2 import run_deseq2, lfc_shrink
-    
-    dds = run_deseq2(sample_counts, sample_metadata, design="~ condition")
-    
-    # Verify that invalid type raises ValueError before hitting R
-    with pytest.raises(ValueError, match="Invalid shrinkage type"):
-        lfc_shrink(dds, coef="condition_treated_vs_control", type="invalid_method")

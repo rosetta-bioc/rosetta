@@ -5,74 +5,60 @@ import rpy2.robjects as ro
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects.packages import importr
 
-from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
-from .._deps import ensure_installed
-from .._errors import RDataError, RFormulaError
+from rosetta._bridge import BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
+from rosetta.utils.kwargs import filter_kwargs
+from rosetta._deps import ensure_installed
+from rosetta._errors import RDataError, RFormulaError
 
+class EdgeR(BaseWrapper):
+    """Class-based wrapper for edgeR quasi-likelihood analysis."""
 
-def edger(counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition", contrast=None, lfc: float = 0, **kwargs) -> pd.DataFrame:
-    """Run edgeR quasi-likelihood differential expression analysis.
+    _PARAMS_QLFIT = {"dispersion", "robust", "winsor.tail.p", "abundance.trend"}
+    _PARAMS_TEST = {"contrast", "coef", "lfc"}
 
-    Args:
-        counts: Gene count matrix (genes x samples) with non-negative integers.
-        metadata: Sample metadata DataFrame with row names matching counts columns.
-        design: R formula string for the experimental design.
-        **kwargs: Additional arguments passed to edgeR::glmQLFit().
+    def __init__(self, counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
+        ensure_installed("edgeR")
+        self.edger_pkg = importr("edgeR")
+        stats_pkg = importr("stats")
 
-    Returns:
-        DataFrame with logFC, logCPM, F, PValue, FDR.
-    """
-    if (counts < 0).any().any():
-        raise RDataError("Count matrix contains negative values")
-    if not set(counts.columns).issubset(set(metadata.index)):
-        raise RDataError("Count matrix columns must match metadata row names")
+        obj = self._fit_model(counts, metadata, design, stats_pkg)
+        
+        super().__init__(obj, self.edger_pkg)
 
-    stats_pkg = importr("stats")
-    with localconverter(_converter):
-        try:
-            stats_pkg.as_formula(design)
-        except Exception as e:
-            raise RFormulaError(f"Invalid design formula '{design}': {e}") from e
+    def _fit_model(self, counts, metadata, design, stats_pkg):
+        if (counts < 0).any().any():
+            raise RDataError("Count matrix contains negative values")
+        if not set(counts.columns).issubset(set(metadata.index)):
+            raise RDataError("Count matrix columns must match metadata row names")
+        r_counts = to_r_matrix(counts)
+        r_metadata = to_r_dataframe(metadata)
+        
+        with localconverter(_converter):
+            try:
+                r_design = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
+            except Exception as e:
+                raise RFormulaError(f"Invalid design formula: {e}")
 
-    ensure_installed("edgeR")
-    edger_pkg = importr("edgeR")
+            dge = self.edger_pkg.DGEList(counts=r_counts)
+            dge = self.edger_pkg.calcNormFactors(dge)
+            dge = self.edger_pkg.estimateDisp(dge, r_design)
+            return self.edger_pkg.glmQLFit(dge, r_design)
 
-    r_counts = to_r_matrix(counts)
-    r_metadata = to_r_dataframe(metadata)
-
-    with localconverter(_converter):
-        r_design_matrix = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
-        dge = edger_pkg.DGEList(counts=r_counts)
-        dge = edger_pkg.calcNormFactors(dge)
-        # Note: estimateDisp() skipped for the QL pipeline (edgeR v4).
-        # Per Gordon Smyth: it's the slowest step and only used for
-        # diagnostic plots, not for glmQLFit/glmQLFTest inference.
-        fit = edger_pkg.glmQLFit(dge, r_design_matrix, **kwargs)
-
-        # Prepare contrast object if provided
-        r_contrast = None
-        if contrast is not None:
-            # Handle both list (e.g., [0, 1]) and DataFrame (matrix) inputs
-            r_contrast = ro.FloatVector(contrast) if isinstance(contrast, list) else to_r_matrix(contrast)
-
-        # Determine testing method (TREAT vs. QL-test)
-        if lfc > 0:
-            # Prepare arguments for glmTreat, excluding 'fit' from kwargs
-            treat_args = {"lfc": lfc}
-            if r_contrast is not None:
-                treat_args["contrast"] = r_contrast
+    def run_test(self, lfc: float = 0, **kwargs):
+        """Perform glmTreat (if lfc > 0) or glmQLFTest."""
+        r_kwargs = filter_kwargs(kwargs, self._PARAMS_TEST)
+        
+        with localconverter(_converter):
+            if lfc > 0:
+                r_kwargs["lfc"] = lfc
+                res = self.edger_pkg.glmTreat(self.obj, **r_kwargs)
+            else:
+                res = self.edger_pkg.glmQLFTest(self.obj, **r_kwargs)
             
-            # Pass 'fit' as a positional argument explicitly
-            res = edger_pkg.glmTreat(fit, **treat_args)
-        else:
-            # Prepare arguments for glmQLFTest, excluding 'fit' from kwargs
-            qlf_args = {}
-            if r_contrast is not None:
-                qlf_args["contrast"] = r_contrast
-            
-            # Pass 'fit' as a positional argument explicitly
-            res = edger_pkg.glmQLFTest(fit, **qlf_args)
+            return res
 
-        top = edger_pkg.topTags(res, n=r_nrow(r_counts))
-
-    return to_pandas(to_r_df(top))
+    def get_results(self, res_obj, **kwargs) -> pd.DataFrame:
+        """Extract results using topTags."""
+        with localconverter(_converter):
+            top = self.edger_pkg.topTags(res_obj, n=r_nrow(self.obj.rx2("counts")), **kwargs)
+            return to_pandas(to_r_df(top))
