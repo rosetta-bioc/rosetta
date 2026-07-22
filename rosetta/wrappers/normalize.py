@@ -1,13 +1,19 @@
 """Normalization and transformation wrappers (DESeq2 VST/rlog, edgeR TMM)."""
 
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects.packages import importr
-
-from .._bridge import _converter, to_r_matrix, to_r_dataframe, to_r_df
+from .._bridge import ACTIVE_BACKEND, _converter, to_r_matrix, to_r_dataframe, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+    from rpy2.robjects.conversion import localconverter
+    from rpy2.robjects.packages import importr
+else:
+    ro = None
+    localconverter = None
+    importr = None
 
 
 def vst(

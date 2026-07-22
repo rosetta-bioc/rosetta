@@ -7,9 +7,16 @@ import tempfile
 import json
 import numpy as np
 import pandas as pd
-import rpy2.robjects as ro
+
 from rosetta.utils import filter_kwargs
+from ._bridge import ACTIVE_BACKEND
 from ._detect import detect_backend, find_rscript, verify_r_package_versions
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+else:
+    ro = None
 
 # Global automatic backend detection (Week 8 Deliverable)
 ACTIVE_BACKEND = detect_backend()
