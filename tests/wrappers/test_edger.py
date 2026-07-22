@@ -2,6 +2,9 @@
 
 import pandas as pd
 import pytest
+from rosetta._deps import is_installed
+if not is_installed("edgeR"):
+    pytest.skip("edgeR R package not installed", allow_module_level=True)
 from rosetta._errors import RDataError, RFormulaError
 from rosetta.wrappers.edger import EdgeR
 

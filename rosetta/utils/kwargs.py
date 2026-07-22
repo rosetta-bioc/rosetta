@@ -23,7 +23,10 @@ def filter_kwargs(kwargs, allowed_args):
             else:
                 filtered[key] = ro.FloatVector(value)
         elif value is None:
-            filtered[key] = ro.r('NULL')
+            if ro is not None:
+                filtered[key] = ro.r('NULL')
+            else:
+                filtered[key] = None
         else:
             filtered[key] = value
             
