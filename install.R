@@ -10,6 +10,7 @@ BiocManager::install(c(
     "limma",
     "clusterProfiler",
     "org.Hs.eg.db",
-    "ReactomePA"
+    "ReactomePA",
+    "apeglm"
 ), ask = FALSE, update = FALSE)
 
