@@ -3,7 +3,7 @@
 These are the "I just want results" functions. Each one runs the full
 statistical pipeline and returns a RosettaDataFrame with .report().
 """
-
+from typing import Optional, List
 import pandas as pd
 from .results import RosettaDataFrame
 
@@ -15,8 +15,8 @@ def diff_expr(
     method: str = "deseq2",
     alpha: float = 0.05,
     lfc_threshold: float = 0.0,
-    shrinkage: str | None = None,
-    contrast: list | None = None,
+    shrinkage: Optional[str] = None,
+    contrast: Optional[list] = None,
 ) -> RosettaDataFrame:
     """Run differential expression — full pipeline, one call.
 
@@ -111,7 +111,7 @@ def compare(
     counts: pd.DataFrame,
     metadata: pd.DataFrame,
     design: str = "~ condition",
-    methods: list[str] | None = None,
+    methods: Optional[List[str]] = None,
     alpha: float = 0.05,
 ) -> RosettaDataFrame:
     """Run multiple DE methods and return a comparison summary.

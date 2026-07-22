@@ -13,11 +13,11 @@ pytestmark = pytest.mark.skipif(not HAS_RPY2, reason="rpy2 not available or inco
 import numpy as np
 import pandas as pd
 
-if HAS_RPY2:
-    from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
-    from rosetta._errors import RDataError
-    from rosetta import _bridge
-    from rosetta._detect import check_rpy2_available
+from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
+from rosetta._errors import RDataError
+from rosetta import _bridge
+from rosetta._detect import check_rpy2_available
+
 
 def test_dataframe_roundtrip(sample_counts):
     r_df = to_r_dataframe(sample_counts)
