@@ -25,12 +25,19 @@ if ACTIVE_BACKEND == "rpy2":
         from rpy2.robjects.conversion import Converter, localconverter
         from rpy2.robjects.packages import importr
 
-_converter = Converter("rosetta")
-_converter += numpy2ri.converter
-_converter += pandas2ri.converter
-_converter += ro.default_converter
-
-_base = None
+    _converter = Converter("rosetta")
+    _converter += numpy2ri.converter
+    _converter += pandas2ri.converter
+    _converter += ro.default_converter
+    _base = None
+else:
+    ro = None
+    numpy2ri = None
+    pandas2ri = None
+    localconverter = None
+    importr = None
+    _converter = None
+    _base = None
 
 
 def _get_base():
