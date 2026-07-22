@@ -1,5 +1,11 @@
 import logging
-import rpy2.robjects as ro
+from rosetta._bridge import ACTIVE_BACKEND
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+else:
+    ro = None
 
 def filter_kwargs(kwargs, allowed_args):
     """
