@@ -1,16 +1,23 @@
 """Tests for rosetta._bridge."""
+
 import pytest
-pytest.importorskip("rpy2")
+
+try:
+    import rpy2.robjects as ro
+    HAS_RPY2 = True
+except Exception:
+    HAS_RPY2 = False
+
+pytestmark = pytest.mark.skipif(not HAS_RPY2, reason="rpy2 not available or incompatible")
 
 import numpy as np
 import pandas as pd
 
-from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
-from rosetta._errors import RDataError
-import rpy2.robjects as ro
-# for week 8
-from rosetta import _bridge
-from rosetta._detect import check_rpy2_available
+if HAS_RPY2:
+    from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
+    from rosetta._errors import RDataError
+    from rosetta import _bridge
+    from rosetta._detect import check_rpy2_available
 
 def test_dataframe_roundtrip(sample_counts):
     r_df = to_r_dataframe(sample_counts)
