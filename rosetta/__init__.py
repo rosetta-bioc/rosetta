@@ -162,18 +162,20 @@ phyloseq_richness = quick_phyloseq
 # --- Exports ---
 
 __all__ = [
+    
     # Metadata
     "__version__",
-    # Tier 3 (Functional/Legacy)
-    "deseq2", "run_deseq2", "get_results", "lfc_shrink",
-    "edger", "limma_voom",
+    # Wrappers & Classes
+    "DESeq2", "run_deseq2",
+    "EdgeR",
+    "Limma",
     "vst", "rlog", "tmm_normalize",
-    "ORA", "GSEA", "enrichment",
-    "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
-    # Tier 2 (Class-based)
+    "ClusterProfiler",
+    "enrich_go", "enrich_kegg",
+    # Tier 2
     "Seurat", "Phyloseq", "VCF",
-    # Tier 1 (Quick API)
-    "quick_deseq2", "quick_edger", "quick_seurat", "quick_phyloseq",
+    # Tier 1
+    "quick_seurat", "quick_phyloseq", "quick_deseq2", "quick_edger",
     "quick_locate_variants", "quick_predict_coding",
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",
