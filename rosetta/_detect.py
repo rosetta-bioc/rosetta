@@ -25,11 +25,9 @@ def check_rpy2_available() -> bool:
     except Exception:
         return False
 
-def find_rscript() -> str:
-    """Locate the Rscript executable in the system path."""
+def find_rscript() -> str | None:
+    """Locate the Rscript executable in the system path, returning None if not found."""
     rscript_path = shutil.which("Rscript")
-    if rscript_path is None:
-        raise RuntimeError("Rscript executable not found in system PATH. Please install R.")
     return rscript_path
 
 def verify_r_package_versions(rscript_path: str):
@@ -75,7 +73,11 @@ def detect_backend() -> str:
     """
     if check_rpy2_available():
         return "rpy2"
-    else:
-        # Ensure Rscript is present in the system for fallback execution
-        find_rscript()
-        return "subprocess"
+    
+    # Check if Rscript is present; if not, fallback gracefully instead of crashing
+    rscript_path = find_rscript()
+    if rscript_path is None:
+        # if there is no R in Python environment, return sth to install the module safely
+        return "fallback"
+        
+    return "subprocess"
