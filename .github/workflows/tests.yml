@@ -48,6 +48,8 @@ jobs:
         run: pip install -e '.[dev,plots]'
 
       - name: Run tests
+        env:
+          RPY2_CFFI_MODE: API
         run: pytest --junitxml=results.xml
 
       - name: Report test results
