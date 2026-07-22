@@ -12,6 +12,8 @@ else:
 
 def is_installed(package: str) -> bool:
     """Check if an R package is installed."""
+    if ACTIVE_BACKEND != "rpy2" or _converter is None:
+        return False
     with localconverter(_converter):
         result = _get_base().requireNamespace(package, quietly=True)
         return bool(result[0])

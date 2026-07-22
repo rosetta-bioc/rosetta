@@ -45,7 +45,7 @@ jobs:
         run: Rscript install.R
 
       - name: Install Python package
-        run: pip install -e '.[dev]'
+        run: pip install -e '.[dev,plots]'
 
       - name: Run tests
         run: pytest --junitxml=results.xml

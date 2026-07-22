@@ -1,4 +1,5 @@
 import pytest
+pytest.importorskip("rpy2")
 import rpy2.robjects as ro
 from rosetta.stats.decide import run_decide_tests
 

@@ -1,8 +1,9 @@
 """Tests for rosetta._bridge."""
+import pytest
+pytest.importorskip("rpy2")
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from rosetta._bridge import BaseWrapper, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
 from rosetta._errors import RDataError
