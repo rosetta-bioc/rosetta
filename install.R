@@ -12,3 +12,4 @@ BiocManager::install(c(
     "org.Hs.eg.db",
     "ReactomePA"
 ), ask = FALSE, update = FALSE)
+
