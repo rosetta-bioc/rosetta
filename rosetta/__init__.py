@@ -60,10 +60,10 @@ def quick_deseq2(counts, metadata, design="~ condition", alpha=0.05, **kwargs):
     Returns:
         RosettaDataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
     """
-    from .wrappers.deseq2 import run_deseq2, get_results
-    dds = run_deseq2(counts, metadata, design)
-    return get_results(dds, alpha=alpha, **kwargs)
-
+    from .wrappers.deseq2 import DESeq2
+    model = DESeq2(counts, metadata, design)
+    model.run_deseq()
+    return model.get_results(alpha=alpha, **kwargs)
 
 def quick_edger(counts, metadata, design="~ condition", **kwargs):
     """
@@ -79,8 +79,10 @@ def quick_edger(counts, metadata, design="~ condition", **kwargs):
     Returns:
         RosettaDataFrame with logFC, logCPM, F, PValue, FDR.
     """
-    from .wrappers.edger import edger as _edger
-    return _edger(counts, metadata, design, **kwargs)
+    from .wrappers.edger import EdgeR
+    model = EdgeR(counts, metadata, design)
+    res = model.run_test(**kwargs)
+    return model.get_results(res)
 
 
 def quick_seurat(counts, **kwargs):

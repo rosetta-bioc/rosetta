@@ -1,7 +1,7 @@
 """DESeq2 differential expression wrapper."""
 
 import pandas as pd
-from .._bridge import ACTIVE_BACKEND, BaseWrapper, to_r_matrix, to_pandas, to_r_df
+from .._bridge import ACTIVE_BACKEND, BaseWrapper, to_r_matrix, to_pandas, to_r_df, _converter
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
 from rosetta.utils.kwargs import filter_kwargs
