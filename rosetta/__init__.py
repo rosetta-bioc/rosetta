@@ -25,11 +25,11 @@ except Exception:
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
 from .quick_result import QuickResult
-from .wrappers.deseq2 import deseq2, run_deseq2, get_results, lfc_shrink
-from .wrappers.edger import edger
-from .wrappers.limma import limma_voom
+from .wrappers.deseq2 import DESeq2, run_deseq2
+from .wrappers.edger import EdgeR
+from .wrappers.limma import Limma
 from .wrappers.normalize import vst, rlog, tmm_normalize
-from .wrappers.clusterprofiler import ORA, GSEA
+from .wrappers.clusterprofiler import ClusterProfiler
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 from .wrappers.vcf import VCF
