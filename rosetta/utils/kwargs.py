@@ -2,7 +2,7 @@ import logging
 # Safely try importing rpy2 for keyword filtering if available
 try:
     import rpy2.robjects as ro
-except ImportError:
+except Exception:
     ro = None
 
 def filter_kwargs(kwargs, allowed_args):
