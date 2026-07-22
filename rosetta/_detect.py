@@ -5,6 +5,7 @@ import shutil
 import json
 import warnings
 import importlib.util
+from typing import Optional
 
 # Pin key R package versions to ensure scientific reproducibility in Week 9 validation tests
 PINNED_VERSIONS = {
@@ -15,17 +16,18 @@ PINNED_VERSIONS = {
 
 def check_rpy2_available() -> bool:
     """Check if rpy2 is installed and can successfully initialize the R runtime."""
-    if importlib.util.find_spec("rpy2") is None:
-        return False
     try:
+        import importlib.util
+        if importlib.util.find_spec("rpy2") is None:
+            return False
+        
         import rpy2.robjects as ro
-        # Attempt to run a basic R expression to verify dynamic library bindings
         ro.r("1 + 1")
         return True
     except Exception:
         return False
 
-def find_rscript() -> str | None:
+def find_rscript() -> Optional[str]:
     """Locate the Rscript executable in the system path, returning None if not found."""
     rscript_path = shutil.which("Rscript")
     return rscript_path
