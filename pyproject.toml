@@ -22,13 +22,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 dependencies = [
-    "rpy2>=3.5",
+    "rpy2>=3.5.15,<3.6",
     "pandas>=1.5",
     "numpy>=1.23",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.5"]
+dev = ["pytest>=7", "ruff>=0.5", "hypothesis>=6.0"]
 plots = ["matplotlib>=3.7"]
 posit = ["rpy2>=3.5"]
 docs = ["mkdocs-material>=9", "mkdocstrings[python]>=0.24"]

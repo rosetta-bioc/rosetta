@@ -2,12 +2,18 @@
 
 import pandas as pd
 from typing import Any
-from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
-from rosetta._bridge import BaseWrapper, _converter, to_pandas, to_r_df
+from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_pandas, to_r_df
 from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects.conversion import localconverter
+else:
+    importr = None
+    localconverter = None
 
 class ClusterProfiler(BaseWrapper):
     """

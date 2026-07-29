@@ -3,7 +3,9 @@
 import numpy as np
 import pandas as pd
 import pytest
-
+from rosetta._deps import is_installed
+if not is_installed("Seurat"):
+    pytest.skip("Seurat R package not installed", allow_module_level=True)
 from rosetta._errors import RDataError
 from rosetta.wrappers.seurat import Seurat
 

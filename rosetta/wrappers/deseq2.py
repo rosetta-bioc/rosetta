@@ -1,16 +1,22 @@
 """DESeq2 differential expression wrapper."""
 
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects.packages import importr
-
-from .._bridge import BaseWrapper, _converter, to_r_matrix, to_pandas, to_r_df
+from .._bridge import ACTIVE_BACKEND, BaseWrapper, to_r_matrix, to_pandas, to_r_df, _converter
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
 from rosetta.utils.kwargs import filter_kwargs
 from .. import codegen
 
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+    from rpy2.robjects.conversion import localconverter
+    from rpy2.robjects.packages import importr
+else:
+    # Safe fallback mocks or placeholders for pure Python environments
+    ro = None
+    localconverter = None
+    importr = None
 class DESeq2(BaseWrapper):
     """Class-based wrapper for DESeq2 differential expression analysis."""
     

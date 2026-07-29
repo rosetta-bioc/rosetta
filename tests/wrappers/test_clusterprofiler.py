@@ -5,6 +5,9 @@
 import pandas as pd
 import numpy as np
 import pytest
+from rosetta._deps import is_installed
+if not is_installed("clusterProfiler"):
+    pytest.skip("clusterProfiler R package not installed", allow_module_level=True)
 from rosetta._errors import RDataError
 from rosetta.wrappers.clusterprofiler import ClusterProfiler
 

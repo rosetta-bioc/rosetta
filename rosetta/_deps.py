@@ -1,13 +1,19 @@
 """R package detection and installation via BiocManager."""
 
-from rpy2.robjects.conversion import localconverter
-
-from ._bridge import _converter, _get_base
+from ._bridge import ACTIVE_BACKEND, _converter, _get_base
 from ._errors import RPackageMissing
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    from rpy2.robjects.conversion import localconverter
+else:
+    localconverter = None
 
 
 def is_installed(package: str) -> bool:
     """Check if an R package is installed."""
+    if ACTIVE_BACKEND != "rpy2" or _converter is None:
+        return False
     with localconverter(_converter):
         result = _get_base().requireNamespace(package, quietly=True)
         return bool(result[0])

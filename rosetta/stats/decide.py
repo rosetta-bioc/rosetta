@@ -1,6 +1,12 @@
 """DecideTests integration for statistical significance."""
 
-from rpy2.robjects.packages import importr
+from .._bridge import ACTIVE_BACKEND
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    from rpy2.robjects.packages import importr
+else:
+    importr = None
 
 def run_decide_tests(fit_object, method="separate", adj="BH", p_value=0.05):
     """

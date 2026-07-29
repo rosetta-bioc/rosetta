@@ -25,11 +25,11 @@ except Exception:
 from ._errors import RDataError, RFormulaError, RPackageMissing
 from .results import RosettaDataFrame
 from .quick_result import QuickResult
-from .wrappers.deseq2 import deseq2, run_deseq2, get_results, lfc_shrink
-from .wrappers.edger import edger
-from .wrappers.limma import limma_voom
+from .wrappers.deseq2 import DESeq2, run_deseq2
+from .wrappers.edger import EdgeR
+from .wrappers.limma import Limma
 from .wrappers.normalize import vst, rlog, tmm_normalize
-from .wrappers.clusterprofiler import ORA, GSEA
+from .wrappers.clusterprofiler import ClusterProfiler
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 from .wrappers.vcf import VCF
@@ -60,10 +60,10 @@ def quick_deseq2(counts, metadata, design="~ condition", alpha=0.05, **kwargs):
     Returns:
         RosettaDataFrame with baseMean, log2FoldChange, lfcSE, stat, pvalue, padj.
     """
-    from .wrappers.deseq2 import run_deseq2, get_results
-    dds = run_deseq2(counts, metadata, design)
-    return get_results(dds, alpha=alpha, **kwargs)
-
+    from .wrappers.deseq2 import DESeq2
+    model = DESeq2(counts, metadata, design)
+    model.run_deseq()
+    return model.get_results(alpha=alpha, **kwargs)
 
 def quick_edger(counts, metadata, design="~ condition", **kwargs):
     """
@@ -79,8 +79,10 @@ def quick_edger(counts, metadata, design="~ condition", **kwargs):
     Returns:
         RosettaDataFrame with logFC, logCPM, F, PValue, FDR.
     """
-    from .wrappers.edger import edger as _edger
-    return _edger(counts, metadata, design, **kwargs)
+    from .wrappers.edger import EdgeR
+    model = EdgeR(counts, metadata, design)
+    res = model.run_test(**kwargs)
+    return model.get_results(res)
 
 
 def quick_seurat(counts, **kwargs):
@@ -162,18 +164,20 @@ phyloseq_richness = quick_phyloseq
 # --- Exports ---
 
 __all__ = [
+    
     # Metadata
     "__version__",
-    # Tier 3 (Functional/Legacy)
-    "deseq2", "run_deseq2", "get_results", "lfc_shrink",
-    "edger", "limma_voom",
+    # Wrappers & Classes
+    "DESeq2", "run_deseq2",
+    "EdgeR",
+    "Limma",
     "vst", "rlog", "tmm_normalize",
-    "ORA", "GSEA", "enrichment",
-    "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
-    # Tier 2 (Class-based)
+    "ClusterProfiler",
+    "enrich_go", "enrich_kegg",
+    # Tier 2
     "Seurat", "Phyloseq", "VCF",
-    # Tier 1 (Quick API)
-    "quick_deseq2", "quick_edger", "quick_seurat", "quick_phyloseq",
+    # Tier 1
+    "quick_seurat", "quick_phyloseq", "quick_deseq2", "quick_edger",
     "quick_locate_variants", "quick_predict_coding",
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",

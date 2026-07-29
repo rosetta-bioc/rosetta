@@ -4,6 +4,9 @@
 
 import pandas as pd
 import pytest
+from rosetta._deps import is_installed
+if not is_installed("DESeq2"):
+    pytest.skip("DESeq2 R package not installed", allow_module_level=True)
 from rosetta._errors import RDataError, RFormulaError
 from rosetta.wrappers.deseq2 import DESeq2
 
