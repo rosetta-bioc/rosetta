@@ -37,6 +37,7 @@ class ClusterProfiler(BaseWrapper):
         # This fixes the unused argument errors
         param_map = {
             "pvalue_cutoff": "pvalueCutoff",
+            "qvalue_cutoff": "qvalueCutoff",
             "min_gs_size": "minGSSize",
             "max_gs_size": "maxGSSize"
         }
