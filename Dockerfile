@@ -1,5 +1,5 @@
 # Base image: Use rocker/r-ver for a stable R environment
-FROM rocker/r-ver:4.3.3
+FROM bioconductor/bioconductor_docker:RELEASE_3_18
 
 # 1. Install system-level dependencies required for R and Python compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
