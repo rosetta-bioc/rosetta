@@ -1,14 +1,20 @@
 """edgeR differential expression wrapper."""
 
 import pandas as pd
-import rpy2.robjects as ro
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects.packages import importr
-
-from rosetta._bridge import BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
+from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
 from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+    from rpy2.robjects.conversion import localconverter
+    from rpy2.robjects.packages import importr
+else:
+    ro = None
+    localconverter = None
+    importr = None
 
 class EdgeR(BaseWrapper):
     """Class-based wrapper for edgeR quasi-likelihood analysis."""

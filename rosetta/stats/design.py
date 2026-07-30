@@ -1,8 +1,15 @@
 """Design matrix and contrast management."""
 
-import rpy2.robjects as ro
-from rpy2.robjects.packages import importr
+from .._bridge import ACTIVE_BACKEND
 from .._errors import RosettaSecurityError
+
+# Conditionally import rpy2 components based on the active backend
+if ACTIVE_BACKEND == "rpy2":
+    import rpy2.robjects as ro
+    from rpy2.robjects.packages import importr
+else:
+    ro = None
+    importr = None
 
 def build_contrast_matrix(colnames, contrast_str):
     """

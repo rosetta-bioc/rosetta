@@ -7,14 +7,15 @@ def test_main_imports():
     """Test that all main functions can be imported from rosetta."""
     import rosetta as rb
     
-    # Tier 3 (Functional/Legacy)
-    assert hasattr(rb, 'deseq2')
-    assert hasattr(rb, 'edger') 
-    assert hasattr(rb, 'limma_voom')
+    # Tier 3 & Wrappers
+    assert hasattr(rb, 'EdgeR')
+    assert hasattr(rb, 'Limma')
+    assert hasattr(rb, 'ClusterProfiler')
+    assert hasattr(rb, 'vst')
+    assert hasattr(rb, 'rlog')
+    assert hasattr(rb, 'tmm_normalize')
     assert hasattr(rb, 'enrich_go')
     assert hasattr(rb, 'enrich_kegg')
-    assert hasattr(rb, 'enrich_pathway')
-    assert hasattr(rb, 'enrich_custom')
 
     # Tier 2 (Class-based)
     assert hasattr(rb, 'Seurat')
@@ -26,6 +27,8 @@ def test_main_imports():
     assert hasattr(rb, 'quick_phyloseq')
     assert hasattr(rb, 'quick_locate_variants')
     assert hasattr(rb, 'quick_predict_coding')
+    assert hasattr(rb, 'quick_deseq2')
+    assert hasattr(rb, 'quick_edger')
 
     # Backward-compat aliases
     assert hasattr(rb, 'phyloseq')
@@ -45,12 +48,13 @@ def test_all_attribute():
     expected = [
         # Metadata
         "__version__",
-        # Tier 3
-        "deseq2", "run_deseq2", "get_results", "lfc_shrink",
-        "edger", "limma_voom",
+        # Wrappers & Classes
+        "DESeq2", "run_deseq2",
+        "EdgeR",
+        "Limma",
         "vst", "rlog", "tmm_normalize",
-        "ORA", "GSEA", "enrichment",
-        "enrich_go", "enrich_kegg", "enrich_pathway", "enrich_custom",
+        "ClusterProfiler",
+        "enrich_go", "enrich_kegg",
         # Tier 2
         "Seurat", "Phyloseq", "VCF",
         # Tier 1
@@ -74,13 +78,9 @@ def test_function_callability():
     """Test that imported functions are callable."""
     import rosetta as rb
     
-    assert callable(rb.deseq2)
-    assert callable(rb.edger)
-    assert callable(rb.limma_voom)
+    assert callable(rb.run_deseq2)
     assert callable(rb.enrich_go)
     assert callable(rb.enrich_kegg)
-    assert callable(rb.enrich_pathway)
-    assert callable(rb.enrich_custom)
     assert callable(rb.quick_seurat)
     assert callable(rb.quick_phyloseq)
     assert callable(rb.quick_locate_variants)

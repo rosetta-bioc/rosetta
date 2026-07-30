@@ -7,6 +7,8 @@ import pytest
 from rosetta._deps import is_installed, ensure_installed
 from rosetta._errors import RPackageMissing
 
+if not is_installed("stats"):
+    pytest.skip("Base R 'stats' package not available", allow_module_level=True)
 
 def test_is_installed_base():
     """base R package 'stats' should always be installed."""

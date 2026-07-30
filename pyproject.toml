@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 dependencies = [
-    "rpy2>=3.5",
+    "rpy2>=3.5.15,<3.6",
     "pandas>=1.5",
     "numpy>=1.23",
 ]
