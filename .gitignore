@@ -7,3 +7,6 @@ build/
 site/
 .pytest_cache/
 .DS_Store
+coverage.json
+.coverage
+htmlcov/

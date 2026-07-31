@@ -17,11 +17,17 @@ def filter_kwargs(kwargs, allowed_args):
             
         if isinstance(value, bool):
             filtered[key] = value # rpy2 handles bool automatically
-        elif isinstance(value, list): #TODO: this logic can be better
-            if all(isinstance(x, int) for x in value):
+        elif isinstance(value, list):
+            if all(isinstance(x, bool) for x in value):
+                filtered[key] = ro.BoolVector(value)
+            elif all(isinstance(x, int) for x in value):
                 filtered[key] = ro.IntVector(value)
-            else:
+            elif all(isinstance(x, float) for x in value):
                 filtered[key] = ro.FloatVector(value)
+            elif all(isinstance(x, str) for x in value):
+                filtered[key] = ro.StrVector(value)
+            else:
+                filtered[key] = ro.StrVector([str(x) for x in value])
         elif value is None:
             if ro is not None:
                 filtered[key] = ro.r('NULL')
