@@ -45,7 +45,7 @@ jobs:
         run: Rscript install.R
 
       - name: Install Python package
-        run: 
+        run: |
           pip install -e '.[dev,plots]'
           pip install scikit-learn
 
