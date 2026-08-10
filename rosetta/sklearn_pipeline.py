@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from ._bridge import to_r_matrix, to_pandas, to_r_df, _converter
 from ._deps import ensure_installed
-from ._errors import RDataError, RFormulaError
+from ._errors import RDataError
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects.packages import importr
 
@@ -56,7 +56,7 @@ class DESeq2Transformer(BaseEstimator, TransformerMixin):
                 )
                 self.dds_ = deseq2_pkg.DESeq(dds)
             except Exception as e:
-                raise RDataError(f"Failed to fit DESeq2 model: {e}")
+                raise RDataError(f"Failed to fit DESeq2 model: {e}") from e
 
         res = deseq2_pkg.results(self.dds_, alpha=self.alpha, lfcThreshold=self.lfc_threshold)
         res_df = to_pandas(to_r_df(res))
@@ -78,7 +78,7 @@ class DESeq2Transformer(BaseEstimator, TransformerMixin):
             
         return X[valid_genes]
 
-class edgeRTransformer(BaseEstimator, TransformerMixin):
+class EdgeRTransformer(BaseEstimator, TransformerMixin):
     """Scikit-learn compatible transformer wrapper for edgeR differential expression analysis."""
     
     def __init__(self, metadata: pd.DataFrame, design: str = "~ condition", alpha: float = 0.05, filter_low_counts: bool = True):
@@ -140,7 +140,7 @@ class edgeRTransformer(BaseEstimator, TransformerMixin):
                 
                 self.dge_ = dge
             except Exception as e:
-                raise RDataError(f"Failed to fit edgeR model: {e}")
+                raise RDataError(f"Failed to fit edgeR model: {e}") from e
 
         # edgeR adjusted p-value column is typically named 'FDR'
         pval_col = 'FDR' if 'FDR' in res_df.columns else 'PValue'

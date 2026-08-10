@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 
-from rosetta.sklearn_pipeline import DESeq2Transformer, edgeRTransformer
+from rosetta.sklearn_pipeline import DESeq2Transformer, EdgeRTransformer
 from rosetta._deps import is_installed
 from rosetta._bridge import to_pandas, to_r_df
 
@@ -53,7 +53,7 @@ def test_airway_deseq2_pipeline():
 
 @pytest.mark.skipif(not is_installed("airway") or not is_installed("edgeR"), reason="Required R packages (airway, edgeR) not installed")
 def test_airway_edger_pipeline():
-    """Test end-to-end integration of edgeRTransformer with StandardScaler, PCA, and RandomForest."""
+    """Test end-to-end integration of EdgeRTransformer with StandardScaler, PCA, and RandomForest."""
     import rpy2.robjects as ro
     from rpy2.robjects.packages import importr
 
@@ -76,7 +76,7 @@ def test_airway_edger_pipeline():
 
     # Build scikit-learn Pipeline with edgeR
     pipe = Pipeline([
-        ('edger', edgeRTransformer(metadata=metadata, design="~ condition", alpha=0.05)),
+        ('edger', EdgeRTransformer(metadata=metadata, design="~ condition", alpha=0.05)),
         ('scale', StandardScaler()),
         ('pca', PCA(n_components=2)),
         ('classify', RandomForestClassifier(random_state=42))
