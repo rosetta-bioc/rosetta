@@ -148,9 +148,22 @@ import rosetta as rb
 go_results = rb.enrich_go(gene_list, org_db="org.Hs.eg.db", ont="BP")
 go_results.report()
 
-# KEGG pathways
-kegg = rb.enrich_kegg(gene_list, organism="hsa")
+# KEGG pathway enrichment
+# Gene list: Entrez IDs of your significant DE genes (strings or ints)
+sig_entrez = ["7157", "672", "675", "1956", "3845", "4609", "5290", "5728"]
+
+kegg = rb.enrich_kegg(sig_entrez, organism="hsa")  # hsa = Homo sapiens
 kegg.report()
+# Enrichment Results Summary
+# ──────────────────────────────
+# Total terms tested:      186
+# Significant (p.adj<0.05): 4
+# Top enriched terms:
+#   • Pathways in cancer (p=3.21e-04)
+#   • PI3K-Akt signaling pathway (p=8.45e-03)
+
+# Access the full results table
+print(kegg[["Description", "GeneRatio", "p.adjust"]].head())
 ```
 
 ## Setup
