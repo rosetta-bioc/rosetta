@@ -54,17 +54,25 @@ def diff_expr(
             # Use last coefficient (typically the treatment effect)
             coef = coefs[-1] if coefs else None
             if coef:
-                return lfc_shrink(dds, coef=coef, type=shrinkage)
+                result = lfc_shrink(dds, coef=coef, type=shrinkage)
+                result._rosetta_method = "deseq2"
+                return result
 
-        return get_results(dds, contrast=contrast, lfc_threshold=lfc_threshold, alpha=alpha)
+        result = get_results(dds, contrast=contrast, lfc_threshold=lfc_threshold, alpha=alpha)
+        result._rosetta_method = "deseq2"
+        return result
 
     elif method == "edger":
         from .wrappers.edger import edger
-        return edger(counts, metadata, design, lfc=lfc_threshold)
+        result = edger(counts, metadata, design, lfc=lfc_threshold)
+        result._rosetta_method = "edger"
+        return result
 
     elif method == "limma":
         from .wrappers.limma import limma_voom
-        return limma_voom(counts, metadata, design)
+        result = limma_voom(counts, metadata, design)
+        result._rosetta_method = "limma"
+        return result
 
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'deseq2', 'edger', or 'limma'.")

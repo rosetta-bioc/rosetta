@@ -16,24 +16,57 @@ class RosettaDataFrame(pd.DataFrame):
         """Print a human-readable summary of the results.
 
         Detects result type by column names and formats accordingly.
+        Includes method name in header when ``_rosetta_method`` is set.
         """
-        text = _build_report(self, alpha)
+        text = _build_report(self, alpha, method=getattr(self, "_rosetta_method", None))
         print(text)
         return text
 
+    def volcano(self, alpha: float = 0.05, lfc_cutoff: float = 1.0,
+                title=None, ax=None, highlight_genes=None, **kwargs):
+        """Volcano plot of -log10(padj) vs log2FC.
 
-def _build_report(df: pd.DataFrame, alpha: float = 0.05) -> str:
+        Requires matplotlib. Returns the matplotlib Figure.
+        """
+        try:
+            from rosetta.plots import volcano as _volcano
+        except ImportError as exc:
+            raise ImportError(
+                "matplotlib is required for volcano plots: pip install matplotlib"
+            ) from exc
+        return _volcano(self, alpha=alpha, lfc_cutoff=lfc_cutoff, title=title,
+                        ax=ax, highlight_genes=highlight_genes, **kwargs)
+
+    def ma_plot(self, alpha: float = 0.05, title=None, ax=None, **kwargs):
+        """MA plot of log2FC vs mean expression.
+
+        Requires matplotlib. Returns the matplotlib Figure.
+        """
+        try:
+            from rosetta.plots import ma_plot as _ma
+        except ImportError as exc:
+            raise ImportError(
+                "matplotlib is required for MA plots: pip install matplotlib"
+            ) from exc
+        return _ma(self, alpha=alpha, title=title, ax=ax, **kwargs)
+
+
+def _build_report(df: pd.DataFrame, alpha: float = 0.05, method: str | None = None) -> str:
     """Build report string based on detected result type."""
     if "padj" in df.columns and "log2FoldChange" in df.columns:
-        return _report_deseq2(df, alpha)
+        text = _report_deseq2(df, alpha)
     elif "FDR" in df.columns and "logFC" in df.columns:
-        return _report_edger(df, alpha)
+        text = _report_edger(df, alpha)
     elif "adj.P.Val" in df.columns and "logFC" in df.columns:
-        return _report_limma(df, alpha)
+        text = _report_limma(df, alpha)
     elif "p.adjust" in df.columns and "GeneRatio" in df.columns:
-        return _report_enrichment(df, alpha)
+        text = _report_enrichment(df, alpha)
     else:
-        return f"Rosetta Results: {len(df)} rows × {len(df.columns)} columns"
+        text = f"Rosetta Results: {len(df)} rows × {len(df.columns)} columns"
+
+    if method:
+        text = f"Method: {method}\n{text}"
+    return text
 
 
 def _report_deseq2(df: pd.DataFrame, alpha: float) -> str:

@@ -80,3 +80,96 @@ class TestReport:
         deseq2_results.to_csv(path)
         reloaded = pd.read_csv(path, index_col=0)
         assert len(reloaded) == len(deseq2_results)
+
+
+class TestMethodMetadata:
+    def test_report_shows_method_when_set(self, deseq2_results):
+        deseq2_results._rosetta_method = "deseq2"
+        text = deseq2_results.report()
+        assert "Method: deseq2" in text
+
+    def test_report_no_method_line_when_unset(self, deseq2_results):
+        # _rosetta_method not set — no "Method:" prefix
+        text = deseq2_results.report()
+        assert "Method:" not in text
+
+    def test_method_line_appears_before_summary(self, deseq2_results):
+        deseq2_results._rosetta_method = "deseq2"
+        text = deseq2_results.report()
+        method_pos = text.index("Method:")
+        summary_pos = text.index("DESeq2 Results Summary")
+        assert method_pos < summary_pos
+
+    def test_method_propagates_through_slice(self, deseq2_results):
+        deseq2_results._rosetta_method = "deseq2"
+        subset = deseq2_results[deseq2_results["padj"] < 0.05]
+        assert subset._rosetta_method == "deseq2"
+
+    def test_edger_method_label(self, edger_results):
+        edger_results._rosetta_method = "edger"
+        text = edger_results.report()
+        assert "Method: edger" in text
+
+
+class TestPlotMethods:
+    """Tests for .volcano() and .ma_plot() on RosettaDataFrame."""
+
+    def test_volcano_returns_figure(self, deseq2_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        fig = deseq2_results.volcano()
+        import matplotlib.pyplot as plt
+        assert hasattr(fig, "savefig")
+        plt.close("all")
+
+    def test_volcano_with_highlight(self, deseq2_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        genes = list(deseq2_results.index[:2])
+        fig = deseq2_results.volcano(highlight_genes=genes)
+        assert fig is not None
+        plt.close("all")
+
+    def test_volcano_custom_alpha_and_lfc(self, deseq2_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        fig = deseq2_results.volcano(alpha=0.01, lfc_cutoff=2.0)
+        assert fig is not None
+        plt.close("all")
+
+    def test_ma_plot_returns_figure(self, deseq2_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        fig = deseq2_results.ma_plot()
+        assert hasattr(fig, "savefig")
+        plt.close("all")
+
+    def test_ma_plot_custom_title(self, deseq2_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        fig = deseq2_results.ma_plot(title="My MA Plot")
+        ax = fig.axes[0]
+        assert ax.get_title() == "My MA Plot"
+        plt.close("all")
+
+    def test_ma_plot_no_mean_col_raises(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        df = RosettaDataFrame({
+            "log2FoldChange": [1.0, -1.0],
+            "padj": [0.01, 0.5],
+        })
+        with pytest.raises(ValueError, match="mean expression"):
+            df.ma_plot()
+
+    def test_volcano_edger(self, edger_results):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        fig = edger_results.volcano()
+        assert fig is not None
+        plt.close("all")
