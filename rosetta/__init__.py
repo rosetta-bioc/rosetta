@@ -36,6 +36,7 @@ from .wrappers.vcf import VCF
 from . import pipelines
 from . import codegen
 from . import plots
+from . import sklearn_compat
 
 def enrich_go(*args, **kwargs):
     return ClusterProfiler().enrich_go(*args, **kwargs)
@@ -182,7 +183,7 @@ __all__ = [
     # Backward-compat aliases
     "phyloseq", "phyloseq_richness", "seurat",
     # Utilities
-    "pipelines", "codegen", "plots",
+    "pipelines", "codegen", "plots", "sklearn_compat",
     "RosettaDataFrame",
     "QuickResult",
     # Errors

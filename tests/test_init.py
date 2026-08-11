@@ -63,7 +63,7 @@ def test_all_attribute():
         # Backward-compat aliases
         "phyloseq", "phyloseq_richness", "seurat",
         # Utilities
-        "pipelines", "codegen", "plots",
+        "pipelines", "codegen", "plots", "sklearn_compat",
         "RosettaDataFrame",
         "QuickResult",
         # Errors
