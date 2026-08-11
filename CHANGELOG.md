@@ -25,6 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bool/float/str R vector coercion in `filter`
 - `lfc_shrink()` pipeline integration
 
+## [0.3.1] - 2026-07-03
+
+### Added
+- JOSS paper draft (`paper.md` + `paper.bib`) with architecture diagram and worked three-tier code example
+- CI workflow for JOSS paper compilation
+- Promoted `run_deseq2`, `get_results`, `lfc_shrink` to top-level exports
+- Zenodo badge + `archive_doi` placeholder in README
+
+### Fixed
+- All GitHub Actions SHAs pinned; permissions tightened; dependabot cooldown fixed
+- SPEC.md: stale `v0.1.0` tag ref corrected, fake Seurat chain flagged, Task 1 marked done
+- JOSS paper: Catherine's affiliation corrected to Humphreys University; AI tool credits added
+
 ## [0.3.0] - 2026-07-01
 
 ### Added
