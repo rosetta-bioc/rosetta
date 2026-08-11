@@ -24,6 +24,8 @@ def build_contrast_matrix(colnames, contrast_str):
     """
     if not contrast_str:
         return None
+    if importr is None:
+        raise RuntimeError("rpy2 is required to build contrast matrices but is not available.")
     limma_pkg = importr("limma")
     
     try:
