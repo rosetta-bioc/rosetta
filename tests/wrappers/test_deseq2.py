@@ -53,12 +53,15 @@ def test_deseq2_pipeline(deseq_model):
 def test_lfc_shrink_success(deseq_model):
     """Verify the lfc_shrink integration using the class object."""
     deseq_model.run_deseq(verbose=False)
-    
+
     # Use r_obj (Tier 3) to discover coefficients
     coefs = list(deseq_model.deseq_pkg.resultsNames(deseq_model.r_obj))
     target_coef = next((c for c in coefs if "condition" in c), coefs[-1])
-    
-    result = deseq_model.lfc_shrink(coef=target_coef, type="apeglm")
-    
+
+    # apeglm requires the optional Bioconductor package; fall back to "normal"
+    # which ships with DESeq2 itself and is always available.
+    shrink_type = "apeglm" if is_installed("apeglm") else "normal"
+    result = deseq_model.lfc_shrink(coef=target_coef, type=shrink_type)
+
     assert isinstance(result, pd.DataFrame)
     assert "log2FoldChange" in result.columns
