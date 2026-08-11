@@ -31,19 +31,27 @@ def test_check_rpy2_available_false_when_spec_missing():
 
 
 def test_check_rpy2_available_false_on_import_error():
+    import builtins
     import importlib.util as _ilu
+
     real_find_spec = _ilu.find_spec
+    real_import = builtins.__import__
 
     def _fake_find_spec(name, *args, **kwargs):
         if name == "rpy2":
             return True  # pretend it exists
         return real_find_spec(name, *args, **kwargs)
 
+    def _failing_import(name, *args, **kwargs):
+        if name == "rpy2.robjects":
+            raise RuntimeError("R init failed")
+        return real_import(name, *args, **kwargs)
+
     with patch("importlib.util.find_spec", side_effect=_fake_find_spec):
-        with patch("rpy2.robjects.r", side_effect=RuntimeError("R init failed")):
+        with patch("builtins.__import__", side_effect=_failing_import):
             # If R crashes during initialisation it should still return False
             result = check_rpy2_available()
-            assert isinstance(result, bool)
+            assert result is False
 
 
 # ---------------------------------------------------------------------------
