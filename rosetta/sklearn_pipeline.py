@@ -3,11 +3,13 @@
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
-from ._bridge import to_r_matrix, to_pandas, to_r_df, _converter
+from ._bridge import ACTIVE_BACKEND, to_r_matrix, to_pandas, to_r_df, _converter
 from ._deps import ensure_installed
 from ._errors import RDataError
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects.packages import importr
+
+if ACTIVE_BACKEND == "rpy2":
+    from rpy2.robjects.conversion import localconverter
+    from rpy2.robjects.packages import importr
 
 
 class DESeq2Transformer(BaseEstimator, TransformerMixin):
