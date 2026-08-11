@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-11
+
+### Added
+- `rosetta.sklearn_compat`: `DESeq2Transformer`, `EdgeRTransformer`, `LimmaTransformer` — sklearn `TransformerMixin` wrappers enabling use inside `sklearn.pipeline.Pipeline`
+- `RosettaDataFrame.volcano()` — volcano plot helper (matplotlib, optional dep)
+- `RosettaDataFrame.ma_plot()` — MA plot helper with significant-gene highlighting
+- `RosettaDataFrame._rosetta_method` metadata tracking; `.report()` now includes method header
+- `subprocess` fallback backend with auto-detection and Bioconductor version pinning
+- Granular `**kwargs` passthrough to underlying R functions
+- R escape-hatch mode for environments without rpy2
+
+### Fixed
+- `results.py`: `from __future__ import annotations` so `str | None` union syntax works on Python 3.9
+- `test_detect.py`: fixed `test_check_rpy2_available_false_on_import_error` patch target for Python 3.12 compatibility (was patching `rpy2.robjects.r` — now patches `builtins.__import__`)
+- `_converter` and `_bridge.py` rpy2 import guards for pure-Python fallback
+- Bool/float/str R vector coercion in `filter`
+- `lfc_shrink()` pipeline integration
+
 ## [0.3.0] - 2026-07-01
 
 ### Added
