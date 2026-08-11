@@ -22,10 +22,12 @@ def sample_metadata():
 @pytest.fixture
 def limma_fit_object():
     """Provides a standard fitted limma object with contrast applied."""
-    pytest.importorskip("rpy2.robjects", reason="rpy2 not available")
-    from rpy2.robjects.packages import importr
+    try:
+        import rpy2.robjects as ro
+        from rpy2.robjects.packages import importr
+    except Exception as e:
+        pytest.skip(f"rpy2 not available: {e}")
     from rosetta.stats.design import build_contrast_matrix
-    import rpy2.robjects as ro
 
     limma = importr("limma")
     
