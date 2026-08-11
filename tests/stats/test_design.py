@@ -1,7 +1,10 @@
 # tests/stats/test_design.py
 import numpy as np
+import pytest
+from rosetta._deps import is_installed
 from rosetta.stats.design import build_contrast_matrix
 
+@pytest.mark.skipif(not is_installed("limma"), reason="limma R package not installed")
 def test_build_contrast_matrix_with_fixtures(sample_metadata):
     # 1. Prepare data
     # Manually define column names consistent with design matrix logic.

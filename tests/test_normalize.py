@@ -5,7 +5,15 @@ import pandas as pd
 import pytest
 
 from rosetta import vst, rlog, tmm_normalize
+from rosetta._deps import is_installed
 from rosetta._errors import RDataError
+
+needs_deseq2 = pytest.mark.skipif(
+    not is_installed("DESeq2"), reason="DESeq2 R package not installed"
+)
+needs_edger = pytest.mark.skipif(
+    not is_installed("edgeR"), reason="edgeR R package not installed"
+)
 
 
 @pytest.fixture
@@ -34,6 +42,7 @@ def norm_metadata():
 
 
 class TestVST:
+    @needs_deseq2
     def test_vst_basic(self, norm_counts):
         """VST returns DataFrame with same shape, values are transformed."""
         result = vst(norm_counts)
@@ -45,6 +54,7 @@ class TestVST:
         # Transformed values should not be raw integers (they're continuous)
         assert not (result.values == result.values.astype(int)).all()
 
+    @needs_deseq2
     def test_vst_blind_false(self, norm_counts, norm_metadata):
         """VST with blind=False and metadata works without error."""
         result = vst(norm_counts, metadata=norm_metadata, design="~ condition", blind=False)
@@ -60,6 +70,7 @@ class TestVST:
 
 
 class TestRlog:
+    @needs_deseq2
     def test_rlog_basic(self, norm_counts):
         """rlog returns DataFrame with same shape, values are transformed."""
         result = rlog(norm_counts)
@@ -73,6 +84,7 @@ class TestRlog:
 
 
 class TestTMM:
+    @needs_edger
     def test_tmm_basic(self, norm_counts):
         """TMM returns DataFrame with same shape, values are log-scale."""
         result = tmm_normalize(norm_counts)
