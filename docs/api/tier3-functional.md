@@ -1,7 +1,6 @@
-# Tier 3: Functional API
+# Tier 3: Functional API & R Escape Hatch
 
-The functional API gives you step-by-step control over each analysis pipeline. You call individual functions, manage intermediate objects, and have full access to every parameter the underlying R packages expose.
-
+The functional API and escape hatch give you step-by-step control over each analysis pipeline and direct access to underlying R objects. You manage intermediate objects, call individual functions, and have full access to every parameter and script the underlying R packages expose.
 ---
 
 ## DESeq2

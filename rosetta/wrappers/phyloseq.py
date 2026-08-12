@@ -1,3 +1,5 @@
+"""Phyloseq.py"""
+
 import pandas as pd
 from typing import Optional, List
 from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas

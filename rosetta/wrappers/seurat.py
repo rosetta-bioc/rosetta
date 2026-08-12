@@ -1,3 +1,5 @@
+"""Seurat.py"""
+
 import pandas as pd
 from rosetta.utils import filter_kwargs
 from rosetta._errors import RDataError
