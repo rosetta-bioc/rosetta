@@ -19,6 +19,7 @@ else:
     importr = None
 class DESeq2(BaseWrapper):
     """Class-based wrapper for DESeq2 differential expression analysis."""
+    _codegen_target = "dds"
     
     # 1. Parameter allowlists
     _PARAMS_DESEQ = {"fitType", "betaPrior", "parallel"}
@@ -68,7 +69,6 @@ class DESeq2(BaseWrapper):
     def run_deseq(self, **kwargs):
         """Fit the DESeq2 model."""
         with localconverter(_converter):
-            codegen._emit("dds <- DESeq(dds)")
             return self._call_r("DESeq", self._PARAMS_DESEQ, **kwargs)
     
     def lfc_shrink(self, **kwargs):
@@ -79,6 +79,7 @@ class DESeq2(BaseWrapper):
             raise ValueError("Invalid shrinkage type. Must be one of {'apeglm', 'ashr', 'normal'}")
 
         with localconverter(_converter):
+            codegen._emit("res <- lfcShrink(dds, ...)")
             res = self.deseq_pkg.lfcShrink(dds=self.obj, **r_kwargs)
             return to_pandas(to_r_df(res))
 
@@ -86,6 +87,7 @@ class DESeq2(BaseWrapper):
         """Extract results as a pandas DataFrame."""
         with localconverter(_converter):
             # Using standardized filtering via BaseWrapper
+            codegen._emit("res <- results(dds, ...)")
             res = self.deseq_pkg.results(self.obj, **kwargs)
             return to_pandas(to_r_df(res))
 
@@ -94,5 +96,3 @@ def run_deseq2(counts, metadata, design):
     """Bridge function for legacy code."""
     model = DESeq2(counts, metadata, design)
     return model.run_deseq().obj
-
-

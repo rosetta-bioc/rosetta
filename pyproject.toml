@@ -28,7 +28,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.5", "hypothesis>=6.0"]
+dev = ["pytest>=7", "ruff>=0.5", "hypothesis>=6.0",
+    "scikit-learn>=1.3"]
 plots = ["matplotlib>=3.7"]
 sklearn = ["scikit-learn>=1.3"]
 posit = ["rpy2>=3.5"]

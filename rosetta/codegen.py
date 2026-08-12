@@ -47,10 +47,10 @@ def clear():
 
 
 def _emit(line: str):
-    """Record and optionally print an R code line."""
+    if not _is_enabled():
+        return
     _get_log().append(line)
-    if _is_enabled():
-        print(f"  \033[2mR>\033[0m \033[36m{line}\033[0m")
+    print(f"  \033[2mR>\033[0m \033[36m{line}\033[0m")
 
 
 def _block(lines: list[str]):
