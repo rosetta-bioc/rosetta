@@ -5,6 +5,7 @@ from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
 from rosetta.stats.design import build_contrast_matrix
+from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
@@ -18,6 +19,7 @@ else:
 
 class Limma(BaseWrapper):
     """Class-based wrapper for Limma-Voom differential expression analysis."""
+    _codegen_target = "fit"
 
     _PARAMS_VOOMLMFIT = {"block", "correlation", "weights", "sample.weights", "span", "plot"}
     _PARAMS_EBAYES = {"trend", "robust", "proportion", "winsor.tail.p"}
@@ -54,8 +56,11 @@ class Limma(BaseWrapper):
 
         with localconverter(_converter):
             dge = self.edger_pkg.DGEList(counts=r_counts)
+            codegen._emit("dge <- DGEList(counts=counts)")
             dge = self.edger_pkg.calcNormFactors(dge)
+            codegen._emit("dge <- calcNormFactors(dge)")
             # voomLmFit
+            codegen._emit("fit <- voomLmFit(dge, design)")
             return self.edger_pkg.voomLmFit(dge, r_design_matrix)
 
     def apply_contrasts(self, contrast: list):
@@ -65,6 +70,7 @@ class Limma(BaseWrapper):
             design_colnames = design_matrix.colnames
             
             contrast_mat = build_contrast_matrix(design_colnames, contrast)
+            codegen._emit("fit <- contrasts.fit(fit, contrast.matrix)")
             self.obj = self.limma_pkg.contrasts_fit(self.obj, contrast_mat)
         return self
     
@@ -80,5 +86,6 @@ class Limma(BaseWrapper):
             r_kwargs["number"] = r_nrow(self.obj)
             
         with localconverter(_converter):
+            codegen._emit("res <- topTable(fit, ...)")
             res = self.limma_pkg.topTable(self.obj, **r_kwargs)
             return to_pandas(res)

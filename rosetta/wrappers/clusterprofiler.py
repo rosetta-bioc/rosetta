@@ -5,6 +5,7 @@ from typing import Any
 from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_pandas, to_r_df
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError
+from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
@@ -50,6 +51,7 @@ class ClusterProfiler(BaseWrapper):
         
         # 3. Execution
         with localconverter(_converter):
+            codegen._emit(f"res <- {func_name}(...)")
             r_func = getattr(self.cp_pkg, func_name)
             res = r_func(**kwargs)
             return to_pandas(to_r_df(res))

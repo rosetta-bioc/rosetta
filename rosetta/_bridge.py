@@ -106,6 +106,9 @@ class BaseWrapper:
     def _call_r(self, func_name, allowed_params, **kwargs):
         """Standardized execution flow with automatic backend fallback (rpy2 vs subprocess)."""
         r_kwargs = filter_kwargs(kwargs, allowed_params)
+        from . import codegen
+        target = getattr(self, "_codegen_target", "obj")
+        codegen._emit(f"{target} <- {func_name}({target}, ...)")
         
         if ACTIVE_BACKEND == "rpy2":
             # Primary high-performance rpy2 execution path

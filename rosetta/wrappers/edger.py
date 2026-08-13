@@ -5,6 +5,7 @@ from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix
 from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
+from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
@@ -46,8 +47,12 @@ class EdgeR(BaseWrapper):
                 raise RFormulaError(f"Invalid design formula: {e}")
 
             dge = self.edger_pkg.DGEList(counts=r_counts)
+            codegen._emit("dge <- DGEList(counts=counts)")
             dge = self.edger_pkg.calcNormFactors(dge)
+            codegen._emit("dge <- calcNormFactors(dge)")
             dge = self.edger_pkg.estimateDisp(dge, r_design)
+            codegen._emit("dge <- estimateDisp(dge, design)")
+            codegen._emit("fit <- glmQLFit(dge, design)")
             return self.edger_pkg.glmQLFit(dge, r_design)
 
     def run_test(self, lfc: float = 0, **kwargs):
@@ -57,8 +62,10 @@ class EdgeR(BaseWrapper):
         with localconverter(_converter):
             if lfc > 0:
                 r_kwargs["lfc"] = lfc
+                codegen._emit("test <- glmTreat(fit, ...)")
                 res = self.edger_pkg.glmTreat(self.obj, **r_kwargs)
             else:
+                codegen._emit("test <- glmQLFTest(fit, ...)")
                 res = self.edger_pkg.glmQLFTest(self.obj, **r_kwargs)
             
             return res
@@ -66,5 +73,6 @@ class EdgeR(BaseWrapper):
     def get_results(self, res_obj, **kwargs) -> pd.DataFrame:
         """Extract results using topTags."""
         with localconverter(_converter):
+            codegen._emit("res <- topTags(test, n=nrow(fit$counts))")
             top = self.edger_pkg.topTags(res_obj, n=r_nrow(self.obj.rx2("counts")), **kwargs)
             return to_pandas(to_r_df(top))

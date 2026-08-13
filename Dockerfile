@@ -37,7 +37,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # 5. Install project dependencies
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir .[dev]
+RUN pip install --no-cache-dir '.[dev,plots,sklearn]'
 
 # 6. Default command to run tests
 CMD ["pytest"]

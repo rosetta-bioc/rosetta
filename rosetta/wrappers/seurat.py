@@ -1,3 +1,5 @@
+"""Seurat.py"""
+
 import pandas as pd
 from rosetta.utils import filter_kwargs
 from rosetta._errors import RDataError
@@ -33,7 +35,14 @@ class Seurat(BaseWrapper):
     _PARAMS_PCA = {"npcs", "features", "verbose", "seed.use"}
     _PARAMS_FIND_NEIGHBORS = {"dims", "reduction", "k.param", "verbose"}
     _PARAMS_FIND_CLUSTERS = {"resolution", "algorithm", "verbose", "random.seed"}
-
+    _PARAMS_RUN_UMAP = {
+        "dims", "reduction", "n.neighbors", "min.dist",
+        "metric", "seed.use", "verbose",
+    }
+    _PARAMS_SCT = {
+        "assay", "new.assay.name", "variable.features.n",
+        "vars.to.regress", "return.only.var.genes", "seed.use", "verbose",
+    }
     def __init__(self, counts: pd.DataFrame):
         if counts.empty:
             raise RDataError("counts must not be empty")
@@ -52,12 +61,15 @@ class Seurat(BaseWrapper):
 
     # 3. Business logic methods
     def run_umap(self, **kwargs):
-        # Apply filter_kwargs to ensure parameter validity
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_RUN_UMAP)
-        
-        # Execute UMAP with filtered parameters
-        self.obj = self.seurat_pkg.RunUMAP(self.obj, **r_kwargs)
+        return self._call_r("RunUMAP", self._PARAMS_RUN_UMAP, **kwargs)
+
+    def run_sctransform(self, **kwargs):
+        r_kwargs = filter_kwargs(kwargs, self._PARAMS_SCT)
+        r_kwargs.setdefault("verbose", False)
+        with localconverter(_converter):
+            self.obj = self.seurat_pkg.SCTransform(self.obj, **r_kwargs)
         return self
+
 
     def run_normalize(self, **kwargs):
         return self._call_r("NormalizeData", self._PARAMS_NORMALIZE, **kwargs)
@@ -93,12 +105,6 @@ class Seurat(BaseWrapper):
         r_counts = to_r_matrix(counts)
         with localconverter(_converter):
             return self.sobj_pkg.CreateSeuratObject(counts=r_counts)
-
-    def run_sctransform(self, **kwargs):
-        """Standardized normalization using SCTransform."""
-        with localconverter(_converter):
-            self.obj = self.seurat_pkg.SCTransform(self.obj, verbose=False, **kwargs)
-        return self
 
     def run_standard_pipeline(self, n_variable_features=2000, n_pcs=10, resolution=0.5, **kwargs):
         """Replicates your original 'one-stop' pipeline logic."""

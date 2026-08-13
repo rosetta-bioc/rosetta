@@ -47,7 +47,7 @@ def clear():
 
 
 def _emit(line: str):
-    """Record and optionally print an R code line."""
+    """Record an R code line; print it only when codegen is enabled."""
     _get_log().append(line)
     if _is_enabled():
         print(f"  \033[2mR>\033[0m \033[36m{line}\033[0m")
