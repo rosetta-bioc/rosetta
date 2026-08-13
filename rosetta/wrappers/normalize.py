@@ -1,10 +1,11 @@
 """Normalization and transformation wrappers (DESeq2 VST/rlog, edgeR TMM)."""
 
 import pandas as pd
-from .._bridge import ACTIVE_BACKEND, _converter, to_r_matrix, to_r_dataframe
+
+from .. import codegen
+from .._bridge import ACTIVE_BACKEND, _converter, to_r_dataframe, to_r_matrix
 from .._deps import ensure_installed
 from .._errors import RDataError
-from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
@@ -57,7 +58,10 @@ def vst(
 
     with localconverter(_converter):
         r_design = stats_pkg.as_formula(design)
-        codegen._emit("dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design=design)")
+        codegen._emit(
+            "dds <- DESeqDataSetFromMatrix("
+            "countData=counts, colData=metadata, design=design)"
+        )
         dds = deseq2_pkg.DESeqDataSetFromMatrix(
             countData=r_counts, colData=r_metadata, design=r_design
         )
@@ -111,7 +115,10 @@ def rlog(
 
     with localconverter(_converter):
         r_design = stats_pkg.as_formula(design)
-        codegen._emit("dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design=design)")
+        codegen._emit(
+            "dds <- DESeqDataSetFromMatrix("
+            "countData=counts, colData=metadata, design=design)"
+        )
         dds = deseq2_pkg.DESeqDataSetFromMatrix(
             countData=r_counts, colData=r_metadata, design=r_design
         )

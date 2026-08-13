@@ -21,7 +21,8 @@ def main():
 
     # Base expression + condition effect for first 100 genes
     base = np.random.negative_binomial(n=5, p=0.01, size=(n_genes, n_samples))
-    base[:100, 3:] += np.random.negative_binomial(n=3, p=0.01, size=(100, 3))  # upregulated in treated
+    # upregulated in treated
+    base[:100, 3:] += np.random.negative_binomial(n=3, p=0.01, size=(100, 3))
 
     counts = pd.DataFrame(base, index=gene_names, columns=sample_names)
     metadata = pd.DataFrame(

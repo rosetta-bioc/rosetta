@@ -1,13 +1,15 @@
 """R session management and bidirectional type conversion."""
 
-import os
 import contextlib
+import json
+import os
 import subprocess
 import tempfile
-import json
+
 import pandas as pd
 
 from rosetta.utils import filter_kwargs
+
 from ._detect import detect_backend, find_rscript, verify_r_package_versions
 
 # Global automatic backend detection (Week 8 Deliverable)
@@ -98,7 +100,7 @@ def r_nrow(r_obj):
     return len(r_obj) if hasattr(r_obj, "__len__") else 0
 class BaseWrapper:
     """Base class for all wrappers, defining a standardized interface for R interaction."""
-    
+
     def __init__(self, obj, pkg):
         self.obj = obj
         self.pkg = pkg
@@ -109,13 +111,13 @@ class BaseWrapper:
         from . import codegen
         target = getattr(self, "_codegen_target", "obj")
         codegen._emit(f"{target} <- {func_name}({target}, ...)")
-        
+
         if ACTIVE_BACKEND == "rpy2":
             # Primary high-performance rpy2 execution path
             func = getattr(self.pkg, func_name)
             self.obj = func(self.obj, **r_kwargs)
             return self
-            
+
         elif ACTIVE_BACKEND == "subprocess":
             # Subprocess + JSON backend fallback path (Week 8 Deliverable)
             self.obj = self._call_r_subprocess(func_name, r_kwargs)
@@ -132,7 +134,9 @@ class BaseWrapper:
                 "func": func_name,
                 "pkg": self.pkg.__name__ if hasattr(self.pkg, "__name__") else str(self.pkg),
                 "kwargs": r_kwargs,
-                "data": self.obj.to_dict(orient="split") if isinstance(self.obj, pd.DataFrame) else None
+                "data": (
+                    self.obj.to_dict(orient="split") if isinstance(self.obj, pd.DataFrame) else None
+                )
             }
             json.dump(input_data, f_in)
             in_path = f_in.name
@@ -144,10 +148,10 @@ class BaseWrapper:
         r_runner_script = f"""
         library(jsonlite)
         input <- fromJSON("{in_path}")
-        
+
         # Dynamically load the target package and execute
         library("{pkg_name}", character.only = TRUE)
-        
+
         # Placeholder for execution mapping; aligned with JSON output expectations
         output_data <- list(status = "success", message = "executed via subprocess fallback")
         write(toJSON(output_data), "{out_path}")
@@ -186,23 +190,23 @@ class BaseWrapper:
     def run_r_script(self, r_code: str, **kwargs):
         """
         Tier 3 Escape Hatch: Execute arbitrary R code strings within the current context.
-        
+
         Args:
             r_code: A string containing valid R code.
             **kwargs: Variables to inject into the R global environment.
-            
+
         Note: The underlying R object is automatically injected as variable 'obj'.
         """
         if ACTIVE_BACKEND != "rpy2":
             raise RuntimeError("run_r_script requires the rpy2 backend to be active.")
-            
+
         from rpy2.robjects import globalenv
-        
+
         # Inject the current object into R's global environment
         globalenv['obj'] = self.obj
-        
+
         # Inject any additional variables provided in kwargs
         for key, value in kwargs.items():
             globalenv[key] = value
-            
+
         return ro.r(r_code)

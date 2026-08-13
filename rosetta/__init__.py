@@ -5,7 +5,8 @@ import importlib.metadata as _meta
 # Detect namespace collision with unrelated 'rosetta' PyPI package
 try:
     _dist = _meta.distribution("rosetta")
-    if "bioinformatics" not in (_dist.metadata.get("Summary", "") + _dist.metadata.get("Keywords", "")).lower():
+    _meta_str = (_dist.metadata.get("Summary", "") + _dist.metadata.get("Keywords", "")).lower()
+    if "bioinformatics" not in _meta_str:
         import warnings
         warnings.warn(
             "Both 'rosetta' and 'rosetta-bioc' are installed. "
@@ -17,26 +18,25 @@ except _meta.PackageNotFoundError:
     pass
 
 from importlib.metadata import version as _get_version
+
 try:
     __version__ = _get_version("rosetta-bioc")
 except Exception:
     __version__ = "0.2.3.dev0"
 
+from . import codegen, pipelines, plots, sklearn_compat
 from ._errors import RDataError, RFormulaError, RPackageMissing
-from .results import RosettaDataFrame
 from .quick_result import QuickResult
+from .results import RosettaDataFrame
+from .wrappers.clusterprofiler import ClusterProfiler
 from .wrappers.deseq2 import DESeq2, run_deseq2
 from .wrappers.edger import EdgeR
 from .wrappers.limma import Limma
-from .wrappers.normalize import vst, rlog, tmm_normalize
-from .wrappers.clusterprofiler import ClusterProfiler
+from .wrappers.normalize import rlog, tmm_normalize, vst
 from .wrappers.phyloseq import Phyloseq
 from .wrappers.seurat import Seurat
 from .wrappers.vcf import VCF
-from . import pipelines
-from . import codegen
-from . import plots
-from . import sklearn_compat
+
 
 def enrich_go(*args, **kwargs):
     return ClusterProfiler().enrich_go(*args, **kwargs)
@@ -123,7 +123,7 @@ def quick_locate_variants(filepath, genome="hg38", txdb=None, region="all"):
     Raises:
         RDataError: If the file does not exist.
     """
-    from .wrappers.variant_annotation import read_vcf, locate_variants
+    from .wrappers.variant_annotation import locate_variants, read_vcf
 
     if txdb is None:
         txdb = f"TxDb.Hsapiens.UCSC.{genome}.knownGene"
@@ -147,7 +147,7 @@ def quick_predict_coding(filepath, genome="hg38", txdb=None, bsgenome=None):
     Raises:
         RDataError: If the file does not exist.
     """
-    from .wrappers.variant_annotation import read_vcf, predict_coding
+    from .wrappers.variant_annotation import predict_coding, read_vcf
 
     if txdb is None:
         txdb = f"TxDb.Hsapiens.UCSC.{genome}.knownGene"
@@ -165,7 +165,7 @@ phyloseq_richness = quick_phyloseq
 # --- Exports ---
 
 __all__ = [
-    
+
     # Metadata
     "__version__",
     # Wrappers & Classes

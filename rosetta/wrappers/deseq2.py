@@ -1,11 +1,20 @@
 """DESeq2 differential expression wrapper."""
 
 import pandas as pd
-from .._bridge import ACTIVE_BACKEND, BaseWrapper, to_r_matrix, to_pandas, to_r_df, _converter
+
+from rosetta.utils.kwargs import filter_kwargs
+
+from .. import codegen
+from .._bridge import (
+    ACTIVE_BACKEND,
+    BaseWrapper,
+    _converter,
+    to_pandas,
+    to_r_df,
+    to_r_matrix,
+)
 from .._deps import ensure_installed
 from .._errors import RDataError, RFormulaError
-from rosetta.utils.kwargs import filter_kwargs
-from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
@@ -20,7 +29,7 @@ else:
 class DESeq2(BaseWrapper):
     """Class-based wrapper for DESeq2 differential expression analysis."""
     _codegen_target = "dds"
-    
+
     # 1. Parameter allowlists
     _PARAMS_DESEQ = {"fitType", "betaPrior", "parallel"}
     _PARAMS_RESULTS = {"contrast", "lfcThreshold", "alpha"}
@@ -30,10 +39,10 @@ class DESeq2(BaseWrapper):
         ensure_installed("DESeq2")
         deseq2_pkg = importr("DESeq2")
         stats_pkg = importr("stats")
-        
+
         # Internal creation logic
         obj = self._create_dds(counts, metadata, design, stats_pkg, deseq2_pkg)
-        
+
         # Initialize BaseWrapper
         super().__init__(obj, deseq2_pkg)
         self.deseq_pkg = deseq2_pkg
@@ -58,7 +67,8 @@ class DESeq2(BaseWrapper):
                 # Keep your original codegen logging
                 codegen._block([
                     "library(DESeq2)",
-                    f"dds <- DESeqDataSetFromMatrix(countData=counts, colData=metadata, design={design})",
+                    "dds <- DESeqDataSetFromMatrix("
+                    f"countData=counts, colData=metadata, design={design})",
                 ])
                 return deseq2_pkg.DESeqDataSetFromMatrix(
                     countData=r_counts, colData=r_metadata, design=r_design
@@ -70,7 +80,7 @@ class DESeq2(BaseWrapper):
         """Fit the DESeq2 model."""
         with localconverter(_converter):
             return self._call_r("DESeq", self._PARAMS_DESEQ, **kwargs)
-    
+
     def lfc_shrink(self, **kwargs):
         """Perform LFC shrinkage with manual parameter validation."""
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_SHRINK)

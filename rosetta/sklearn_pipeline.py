@@ -3,7 +3,8 @@
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
-from ._bridge import ACTIVE_BACKEND, to_r_matrix, to_pandas, to_r_df, _converter
+
+from ._bridge import ACTIVE_BACKEND, _converter, to_pandas, to_r_df, to_r_matrix
 from ._deps import ensure_installed
 from ._errors import RDataError
 
@@ -41,7 +42,8 @@ class DESeq2Transformer(BaseEstimator, TransformerMixin):
 
         if not isinstance(X, pd.DataFrame):
             raise TypeError(
-                "Input X must be a pandas DataFrame with gene names as columns and sample names as rows."
+                "Input X must be a pandas DataFrame with gene names as columns "
+                "and sample names as rows."
             )
         if X.columns.empty or not any(isinstance(c, str) for c in X.columns):
             raise ValueError("Input DataFrame X must have valid gene names as column headers.")
@@ -76,7 +78,9 @@ class DESeq2Transformer(BaseEstimator, TransformerMixin):
 
         valid_genes = [g for g in self.significant_genes_ if g in X.columns]
         if not valid_genes:
-            raise ValueError("None of the significant genes found by DESeq2 exist in the input matrix columns.")
+            raise ValueError(
+                "None of the significant genes found by DESeq2 exist in the input matrix columns."
+            )
 
         return X[valid_genes]
 
@@ -112,7 +116,8 @@ class EdgeRTransformer(BaseEstimator, TransformerMixin):
 
         if not isinstance(X, pd.DataFrame):
             raise TypeError(
-                "Input X must be a pandas DataFrame with gene names as columns and sample names as rows."
+                "Input X must be a pandas DataFrame with gene names as columns "
+                "and sample names as rows."
             )
         if X.columns.empty or not any(isinstance(c, str) for c in X.columns):
             raise ValueError("Input DataFrame X must have valid gene names as column headers.")
@@ -165,6 +170,8 @@ class EdgeRTransformer(BaseEstimator, TransformerMixin):
 
         valid_genes = [g for g in self.significant_genes_ if g in X.columns]
         if not valid_genes:
-            raise ValueError("None of the significant genes found by edgeR exist in the input matrix columns.")
+            raise ValueError(
+                "None of the significant genes found by edgeR exist in the input matrix columns."
+            )
 
         return X[valid_genes]

@@ -1,11 +1,20 @@
 """Seurat.py"""
 
-import pandas as pd
-from rosetta.utils import filter_kwargs
-from rosetta._errors import RDataError
-from typing import Dict, Any
+from typing import Any, Dict
 
-from .._bridge import ACTIVE_BACKEND, _converter, to_r_matrix, to_pandas, to_r_df, BaseWrapper
+import pandas as pd
+
+from rosetta._errors import RDataError
+from rosetta.utils import filter_kwargs
+
+from .._bridge import (
+    ACTIVE_BACKEND,
+    BaseWrapper,
+    _converter,
+    to_pandas,
+    to_r_df,
+    to_r_matrix,
+)
 from .._deps import ensure_installed
 
 # Conditionally import rpy2 components based on the active backend
@@ -48,14 +57,14 @@ class Seurat(BaseWrapper):
             raise RDataError("counts must not be empty")
         if (counts < 0).any().any():
             raise RDataError("Count matrix contains negative values")
-        
+
         ensure_installed("Seurat")
         seurat_pkg = importr("Seurat")
         self.sobj_pkg = importr("SeuratObject")
         self.methods_pkg = importr("methods")
-        
+
         obj = self._create_object(counts)
-        
+
         super().__init__(obj, seurat_pkg)
         self.seurat_pkg = seurat_pkg
 
@@ -109,18 +118,24 @@ class Seurat(BaseWrapper):
     def run_standard_pipeline(self, n_variable_features=2000, n_pcs=10, resolution=0.5, **kwargs):
         """Replicates your original 'one-stop' pipeline logic."""
         dims = ro.IntVector(range(1, n_pcs + 1))
-        
+
         with localconverter(_converter):
             self.obj = self.seurat_pkg.NormalizeData(self.obj, verbose=False)
-            self.obj = self.seurat_pkg.FindVariableFeatures(self.obj, nfeatures=n_variable_features, verbose=False)
+            self.obj = self.seurat_pkg.FindVariableFeatures(
+                self.obj, nfeatures=n_variable_features, verbose=False
+            )
             self.obj = self.seurat_pkg.ScaleData(self.obj, verbose=False)
             self.obj = self.seurat_pkg.RunPCA(self.obj, npcs=n_pcs, verbose=False)
             self.obj = self.seurat_pkg.FindNeighbors(self.obj, dims=dims, verbose=False)
-            self.obj = self.seurat_pkg.FindClusters(self.obj, resolution=resolution, verbose=False, **kwargs)
+            self.obj = self.seurat_pkg.FindClusters(
+                self.obj, resolution=resolution, verbose=False, **kwargs
+            )
             self.obj = self.seurat_pkg.RunUMAP(self.obj, dims=dims, verbose=False)
         return self
-    
-    def find_markers(self, ident_1: str, ident_2: str = None, group_by: str = None, **kwargs) -> pd.DataFrame:
+
+    def find_markers(
+        self, ident_1: str, ident_2: str = None, group_by: str = None, **kwargs
+    ) -> pd.DataFrame:
         """Find differentially expressed markers between groups."""
         with localconverter(_converter):
             if group_by:
@@ -140,7 +155,7 @@ class Seurat(BaseWrapper):
             meta = to_pandas(to_r_df(self.methods_pkg.slot(self.obj, "meta.data")))
             embeddings = to_pandas(to_r_df(self.sobj_pkg.Embeddings(self.obj, reduction="umap")))
             var_features = list(self.sobj_pkg.VariableFeatures(self.obj))
-            
+
         return {
             "clusters": meta["seurat_clusters"],
             "umap": embeddings,

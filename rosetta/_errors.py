@@ -10,7 +10,10 @@ class RPackageMissing(RosettaError):
 
     def __init__(self, package: str):
         self.package = package
-        super().__init__(f"R package '{package}' is not installed. Install with: R -e 'BiocManager::install(\"{package}\")'")
+        super().__init__(
+            f"R package '{package}' is not installed. "
+            f"Install with: R -e 'BiocManager::install(\"{package}\")'"
+        )
 
 
 class RFormulaError(RosettaError):

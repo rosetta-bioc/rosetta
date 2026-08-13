@@ -1,11 +1,21 @@
 """Phyloseq.py"""
 
+from typing import List, Optional
+
 import pandas as pd
-from typing import Optional, List
-from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas
-from rosetta.utils.kwargs import filter_kwargs
+
+from rosetta._bridge import (
+    ACTIVE_BACKEND,
+    BaseWrapper,
+    _converter,
+    to_pandas,
+    to_r_dataframe,
+    to_r_matrix,
+)
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError
+from rosetta.utils.kwargs import filter_kwargs
+
 from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
@@ -29,23 +39,28 @@ def _phyloseq_available():
 class Phyloseq(BaseWrapper):
     """
     Class-based wrapper for phyloseq microbiome analysis.
-    
+
     This class wraps the S4 phyloseq object, providing methods for alpha diversity
     estimation and ordination analysis.
     """
 
     _PARAMS_ORDINATION = {"method", "distance", "formula", "first", "last", "trymax", "k"}
 
-    def __init__(self, otu_table: pd.DataFrame, sample_data: Optional[pd.DataFrame] = None, tax_table: Optional[pd.DataFrame] = None):
+    def __init__(
+        self,
+        otu_table: pd.DataFrame,
+        sample_data: Optional[pd.DataFrame] = None,
+        tax_table: Optional[pd.DataFrame] = None,
+    ):
         if otu_table.empty:
             raise RDataError("otu_table must not be empty")
         if (otu_table < 0).any().any():
             raise RDataError("OTU table contains negative values")
-            
+
         ensure_installed("phyloseq")
         self.ps_pkg = importr("phyloseq")
         self.base_pkg = importr("base")
-        
+
         obj = self._create_object(otu_table, sample_data, tax_table)
         super().__init__(obj, self.ps_pkg)
 
@@ -74,18 +89,18 @@ class Phyloseq(BaseWrapper):
     def run_ordination(self, **kwargs) -> pd.DataFrame:
         """
         Perform ordination analysis and return coordinates as a pandas DataFrame.
-        
+
         Args:
             **kwargs: Arguments for phyloseq::ordinate (method, distance, etc.)
         """
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_ORDINATION)
-        
+
         with localconverter(_converter):
             codegen._emit("ordination <- ordinate(ps, ...)")
             ord_obj = self.ps_pkg.ordinate(self.obj, **r_kwargs)
-            
+
             # Extract coordinates and ensure conversion to a standard R data.frame
             vectors = ord_obj.rx2("vectors")
             df_r = self.base_pkg.as_data_frame(vectors)
-            
+
             return to_pandas(df_r)

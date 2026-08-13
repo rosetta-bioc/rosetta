@@ -83,7 +83,8 @@ def _report_deseq2(df: pd.DataFrame, alpha: float) -> str:
         "DESeq2 Results Summary",
         "─" * 30,
         f"Total genes tested:      {n:,}",
-        f"Significant (padj<{alpha}): {n_sig:,} ({100*n_sig/n:.1f}%)" if n > 0 else "Significant: 0",
+        (f"Significant (padj<{alpha}): {n_sig:,} ({100*n_sig/n:.1f}%)"
+         if n > 0 else "Significant: 0"),
         f"  ↑ Upregulated:         {up:,}",
         f"  ↓ Downregulated:       {down:,}",
     ]
@@ -104,7 +105,8 @@ def _report_edger(df: pd.DataFrame, alpha: float) -> str:
         "edgeR Results Summary",
         "─" * 30,
         f"Total genes tested:      {n:,}",
-        f"Significant (FDR<{alpha}):  {n_sig:,} ({100*n_sig/n:.1f}%)" if n > 0 else "Significant: 0",
+        (f"Significant (FDR<{alpha}):  {n_sig:,} ({100*n_sig/n:.1f}%)"
+         if n > 0 else "Significant: 0"),
         f"  ↑ Upregulated:         {up:,}",
         f"  ↓ Downregulated:       {down:,}",
     ]
@@ -125,7 +127,8 @@ def _report_limma(df: pd.DataFrame, alpha: float) -> str:
         "limma Results Summary",
         "─" * 30,
         f"Total genes tested:      {n:,}",
-        f"Significant (adj.P<{alpha}): {n_sig:,} ({100*n_sig/n:.1f}%)" if n > 0 else "Significant: 0",
+        (f"Significant (adj.P<{alpha}): {n_sig:,} ({100*n_sig/n:.1f}%)"
+         if n > 0 else "Significant: 0"),
         f"  ↑ Upregulated:         {up:,}",
         f"  ↓ Downregulated:       {down:,}",
     ]

@@ -139,6 +139,8 @@ class VCF:
 
             df = vcf_to_dataframe(self._vcf)
             lines.append(f"Total variants:            {len(df):,}")
-            lines.append("(No annotations computed yet — call .locate_variants() or .predict_coding())")
+            lines.append(
+                "(No annotations computed yet — call .locate_variants() or .predict_coding())"
+            )
 
         print("\n".join(lines))
