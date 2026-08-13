@@ -42,7 +42,7 @@ That's it. No R code. No rpy2 boilerplate. No type conversion. Just results.
 |------|-------|-----------|----------|
 | 1 — Quick | `quick_*()` | `quick_deseq2`, `quick_edger`, `quick_seurat`, `quick_phyloseq` | One-liners for notebooks |
 | 2 — Class-based | `Class()` | `Seurat()`, `Phyloseq()` | Stateful, chainable workflows |
-| 3 — Functional | `func()` | `run_deseq2()` + `get_results()`, `edger()`, `limma_voom()`, ORA, GSEA | Full control |
+| 3 — Escape Hatch | .r_obj | model.r_obj, model.run_r_script() | Advanced rpy2 access & full R ecosystem control |
 
 ```python
 # Tier 1 — quick: one call, done
@@ -51,9 +51,9 @@ results = rb.quick_deseq2(counts_df, metadata_df, design="~ condition")
 # Tier 2 — class-based: build up state, chain methods
 seu = rb.Seurat(matrix).normalize().find_clusters().umap()
 
-# Tier 3 — functional: explicit steps, full access
-dds = rb.wrappers.deseq2.run_deseq2(counts, meta, design="~ batch + condition")
-res = rb.wrappers.deseq2.get_results(dds, lfc_threshold=1.0)
+# Tier 3 — r escape hatch: direct access to the underlying R object
+dds_r = model.r_obj
+result_names = model.run_r_script("resultsNames(obj)")
 ```
 
 ## Complete example — copy, paste, run
@@ -84,16 +84,16 @@ Requires: Python 3.9+, R 4.0+, and Bioconductor's DESeq2 (`BiocManager::install(
 
 ## What it wraps
 
-| R Package | Quick API | Class / Functional | What it does |
-|-----------|-----------|-------------------|--------------|
-| DESeq2 | `rb.quick_deseq2()` | `run_deseq2()` + `get_results()` | Differential expression (negative binomial) |
-| edgeR | `rb.quick_edger()` | `rb.edger()` | Quasi-likelihood differential expression |
-| limma | — | `rb.limma_voom()` | Linear models + TREAT significance |
-| clusterProfiler | — | `rb.enrich_go()`, GSEA | GO/KEGG/Reactome pathway enrichment |
+| R Package | Quick API | Class API (Tier 2) | What it does |
+|-----------|-----------|--------------------|--------------|
+| DESeq2 | `rb.quick_deseq2()` | `DESeq2()` | Differential expression (negative binomial) |
+| edgeR | `rb.quick_edger()` | `EdgeR()` | Quasi-likelihood differential expression |
+| limma | — | `Limma()` | Linear models + TREAT significance |
+| clusterProfiler | — | `ClusterProfiler()` | GO/KEGG/Reactome pathway enrichment |
 | phyloseq | `rb.quick_phyloseq()` | `Phyloseq()` | Microbiome diversity analysis |
 | Seurat | `rb.quick_seurat()` | `Seurat()` | Single-cell RNA-seq |
 
-All functions return a `RosettaDataFrame` (pandas DataFrame subclass) with a `.report()` method.
+All functions and class methods return a `RosettaDataFrame` (pandas DataFrame subclass) with a `.report()` method.
 
 ## Not a toy — full design support
 
@@ -124,19 +124,26 @@ res = rb.wrappers.deseq2.get_results(dds, lfc_threshold=1.0)
 
 `rb.codegen.last()` returns it as a string — paste into R to reproduce independently.
 
-## Modular DESeq2 API
+## Advanced DESeq2 Workflow
 
 For more control, use the step-by-step interface:
 
 ```python
-from rosetta.wrappers.deseq2 import run_deseq2, get_results, lfc_shrink
+from rosetta import DESeq2
 
-dds = run_deseq2(counts_df, metadata_df, design="~ condition")
-res = get_results(dds, contrast=["condition", "treated", "control"], alpha=0.05)
-shrunk = lfc_shrink(dds, coef="condition_treated_vs_control", type="apeglm")
+# 1. Initialize and fit the model (Tier 2)
+model = DESeq2(counts_df, metadata_df, design="~ condition")
+model.run_deseq()
+
+# 2. Extract results and perform LFC shrinkage
+res = model.get_results(contrast=["condition", "treated", "control"], alpha=0.05)
+shrunk = model.lfc_shrink(coef="condition_treated_vs_control", type="apeglm")
 
 res.report()
-shrunk.report()
+
+# 3. Ultimate flexibility (Tier 3: Escape Hatch)
+# Directly access the r_obj to call any R function not yet supported by Rosetta
+r_dataset = model.r_obj
 ```
 
 ## Enrichment analysis
