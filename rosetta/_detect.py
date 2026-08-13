@@ -4,7 +4,6 @@ import subprocess
 import shutil
 import json
 import warnings
-import importlib.util
 from typing import Optional
 
 # Pin key R package versions to ensure scientific reproducibility in Week 9 validation tests

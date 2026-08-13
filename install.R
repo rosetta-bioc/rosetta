@@ -11,6 +11,8 @@ BiocManager::install(c(
     "clusterProfiler",
     "org.Hs.eg.db",
     "ReactomePA",
-    "apeglm"
+    "apeglm",
+    "phyloseq",
+    "Seurat"
 ), ask = FALSE, update = FALSE)
 

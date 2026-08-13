@@ -59,25 +59,12 @@ class Seurat(BaseWrapper):
         self.obj = self.seurat_pkg.RunUMAP(self.obj, **r_kwargs)
         return self
 
-    def run_sctransform(self, **kwargs):
-        # Apply filter_kwargs to ensure parameter validity
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_SCT)
-        
-        # Execute SCTransform
-        self.obj = self.seurat_pkg.SCTransform(self.obj, **r_kwargs)
-        return self
-    
     def run_normalize(self, **kwargs):
         return self._call_r("NormalizeData", self._PARAMS_NORMALIZE, **kwargs)
 
     def run_find_variable_features(self, **kwargs):
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_VARIABLE_FEATURES)
         self.obj = self.seurat_pkg.FindVariableFeatures(self.obj, **r_kwargs)
-        return self
-
-    def run_scale_data(self, **kwargs):
-        r_kwargs = filter_kwargs(kwargs, self._PARAMS_SCALE_DATA)
-        self.obj = self.seurat_pkg.ScaleData(self.obj, **r_kwargs)
         return self
 
     def run_scale_data(self, **kwargs):

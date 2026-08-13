@@ -3,7 +3,6 @@
 import pandas as pd
 from typing import Any
 from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_pandas, to_r_df
-from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError
 

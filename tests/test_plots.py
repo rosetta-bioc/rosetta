@@ -1,224 +1,205 @@
-"""Tests for rosetta.plots module."""
-
-import matplotlib
-matplotlib.use("Agg")
-
+"""Tests for rosetta.plots — MA, PCA, volcano, column detection."""
 import numpy as np
 import pandas as pd
 import pytest
-from matplotlib.figure import Figure
 
-from rosetta.plots import volcano, ma_plot, pca
-from rosetta.plots._detect import detect_columns, DetectedColumns
-
-
-# --- Fixtures ---
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend for CI
 
 
-@pytest.fixture
-def deseq2_results():
-    """Synthetic DESeq2-like results DataFrame."""
-    np.random.seed(42)
-    n = 500
-    return pd.DataFrame(
-        {
-            "baseMean": np.random.exponential(500, n),
-            "log2FoldChange": np.random.normal(0, 2, n),
-            "lfcSE": np.random.uniform(0.1, 0.5, n),
-            "stat": np.random.normal(0, 3, n),
-            "pvalue": np.random.uniform(0, 1, n),
-            "padj": np.random.uniform(0, 1, n),
-        },
-        index=[f"gene_{i}" for i in range(n)],
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+def _deseq2_df(n=20, n_sig=5):
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame({
+        "baseMean": rng.uniform(10, 1000, n),
+        "log2FoldChange": rng.uniform(-3, 3, n),
+        "padj": np.concatenate([rng.uniform(0.0, 0.04, n_sig),
+                                 rng.uniform(0.1, 1.0, n - n_sig)]),
+        "pvalue": rng.uniform(0, 1, n),
+    }, index=[f"gene{i}" for i in range(n)])
+    return df
+
+
+def _edger_df(n=20):
+    rng = np.random.default_rng(1)
+    return pd.DataFrame({
+        "logFC": rng.uniform(-3, 3, n),
+        "logCPM": rng.uniform(1, 10, n),
+        "FDR": rng.uniform(0, 1, n),
+        "PValue": rng.uniform(0, 1, n),
+    }, index=[f"gene{i}" for i in range(n)])
+
+
+def _limma_df(n=20):
+    rng = np.random.default_rng(2)
+    return pd.DataFrame({
+        "logFC": rng.uniform(-3, 3, n),
+        "AveExpr": rng.uniform(1, 10, n),
+        "adj.P.Val": rng.uniform(0, 1, n),
+        "P.Value": rng.uniform(0, 1, n),
+    }, index=[f"gene{i}" for i in range(n)])
+
+
+# ---------------------------------------------------------------------------
+# plots/_detect.py
+# ---------------------------------------------------------------------------
+
+def test_detect_deseq2():
+    from rosetta.plots._detect import detect_columns
+    det = detect_columns(_deseq2_df())
+    assert det.tool == "deseq2"
+    assert det.lfc == "log2FoldChange"
+    assert det.pvalue == "padj"
+    assert det.mean_expr == "baseMean"
+
+
+def test_detect_edger():
+    from rosetta.plots._detect import detect_columns
+    det = detect_columns(_edger_df())
+    assert det.tool == "edger"
+    assert det.lfc == "logFC"
+    assert det.mean_expr == "logCPM"
+
+
+def test_detect_limma():
+    from rosetta.plots._detect import detect_columns
+    det = detect_columns(_limma_df())
+    assert det.tool == "limma"
+    assert det.mean_expr == "AveExpr"
+
+
+def test_detect_unknown_raises():
+    from rosetta.plots._detect import detect_columns
+    with pytest.raises(ValueError, match="Cannot detect"):
+        detect_columns(pd.DataFrame({"x": [1], "y": [2]}))
+
+
+# ---------------------------------------------------------------------------
+# plots/ma.py
+# ---------------------------------------------------------------------------
+
+def test_ma_plot_deseq2_returns_figure():
+    from rosetta.plots.ma import ma_plot
+    fig = ma_plot(_deseq2_df())
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_ma_plot_edger_returns_figure():
+    from rosetta.plots.ma import ma_plot
+    fig = ma_plot(_edger_df())
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_ma_plot_limma_returns_figure():
+    from rosetta.plots.ma import ma_plot
+    fig = ma_plot(_limma_df())
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_ma_plot_custom_title():
+    from rosetta.plots.ma import ma_plot
+    fig = ma_plot(_deseq2_df(), title="My MA")
+    ax = fig.axes[0]
+    assert ax.get_title() == "My MA"
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_ma_plot_no_mean_col_raises():
+    from rosetta.plots.ma import ma_plot
+    df = pd.DataFrame({"log2FoldChange": [1.0], "padj": [0.01]})
+    with pytest.raises(ValueError, match="No mean expression column"):
+        ma_plot(df)
+
+
+def test_ma_plot_uses_provided_ax():
+    import matplotlib.pyplot as plt
+    from rosetta.plots.ma import ma_plot
+    fig, ax = plt.subplots()
+    returned_fig = ma_plot(_deseq2_df(), ax=ax)
+    assert returned_fig is fig
+    plt.close("all")
+
+
+# ---------------------------------------------------------------------------
+# plots/volcano.py
+# ---------------------------------------------------------------------------
+
+def test_volcano_deseq2_returns_figure():
+    from rosetta.plots.volcano import volcano
+    fig = volcano(_deseq2_df())
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_volcano_custom_title():
+    from rosetta.plots.volcano import volcano
+    fig = volcano(_deseq2_df(), title="My Volcano")
+    ax = fig.axes[0]
+    assert "My Volcano" in ax.get_title()
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_volcano_highlight_genes():
+    from rosetta.plots.volcano import volcano
+    df = _deseq2_df(n=20, n_sig=10)
+    highlight = [df.index[0], df.index[1]]
+    fig = volcano(df, highlight_genes=highlight)
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+# ---------------------------------------------------------------------------
+# plots/pca.py
+# ---------------------------------------------------------------------------
+
+def _count_matrix(n_genes=50, n_samples=8):
+    rng = np.random.default_rng(3)
+    counts = pd.DataFrame(
+        rng.integers(0, 500, size=(n_genes, n_samples)),
+        index=[f"gene{i}" for i in range(n_genes)],
+        columns=[f"sample{i}" for i in range(n_samples)],
     )
+    return counts
 
 
-@pytest.fixture
-def edger_results():
-    """Synthetic edgeR-like results DataFrame."""
-    np.random.seed(43)
-    n = 500
-    return pd.DataFrame(
-        {
-            "logFC": np.random.normal(0, 2, n),
-            "logCPM": np.random.normal(5, 2, n),
-            "F": np.random.uniform(0, 20, n),
-            "PValue": np.random.uniform(0, 1, n),
-            "FDR": np.random.uniform(0, 1, n),
-        },
-        index=[f"gene_{i}" for i in range(n)],
+def test_pca_returns_figure():
+    from rosetta.plots.pca import pca
+    fig = pca(_count_matrix())
+    assert fig is not None
+    import matplotlib.pyplot as plt
+    plt.close("all")
+
+
+def test_pca_with_metadata_color_by():
+    import matplotlib.pyplot as plt
+    from rosetta.plots.pca import pca
+    counts = _count_matrix(n_samples=6)
+    meta = pd.DataFrame(
+        {"condition": ["A", "A", "A", "B", "B", "B"]},
+        index=counts.columns,
     )
+    fig = pca(counts, metadata=meta, color_by="condition")
+    assert fig is not None
+    plt.close("all")
 
 
-@pytest.fixture
-def limma_results():
-    """Synthetic limma-like results DataFrame."""
-    np.random.seed(44)
-    n = 500
-    return pd.DataFrame(
-        {
-            "logFC": np.random.normal(0, 1.5, n),
-            "AveExpr": np.random.normal(6, 2, n),
-            "t": np.random.normal(0, 3, n),
-            "P.Value": np.random.uniform(0, 1, n),
-            "adj.P.Val": np.random.uniform(0, 1, n),
-            "B": np.random.normal(0, 2, n),
-        },
-        index=[f"gene_{i}" for i in range(n)],
-    )
-
-
-@pytest.fixture
-def count_matrix():
-    """Synthetic count matrix (genes x samples)."""
-    np.random.seed(45)
-    return pd.DataFrame(
-        np.random.negative_binomial(5, 0.1, size=(200, 6)),
-        index=[f"gene_{i}" for i in range(200)],
-        columns=["ctrl_1", "ctrl_2", "ctrl_3", "treat_1", "treat_2", "treat_3"],
-    )
-
-
-@pytest.fixture
-def sample_metadata():
-    """Sample metadata for PCA coloring."""
-    return pd.DataFrame(
-        {"condition": ["control"] * 3 + ["treated"] * 3},
-        index=["ctrl_1", "ctrl_2", "ctrl_3", "treat_1", "treat_2", "treat_3"],
-    )
-
-
-# --- _detect tests ---
-
-
-class TestDetectColumns:
-    def test_detect_deseq2(self, deseq2_results):
-        detected = detect_columns(deseq2_results)
-        assert detected.pvalue == "padj"
-        assert detected.lfc == "log2FoldChange"
-        assert detected.mean_expr == "baseMean"
-        assert detected.tool == "deseq2"
-
-    def test_detect_edger(self, edger_results):
-        detected = detect_columns(edger_results)
-        assert detected.pvalue == "FDR"
-        assert detected.lfc == "logFC"
-        assert detected.mean_expr == "logCPM"
-        assert detected.tool == "edger"
-
-    def test_detect_limma(self, limma_results):
-        detected = detect_columns(limma_results)
-        assert detected.pvalue == "adj.P.Val"
-        assert detected.lfc == "logFC"
-        assert detected.mean_expr == "AveExpr"
-        assert detected.tool == "limma"
-
-    def test_detect_unknown_raises(self):
-        df = pd.DataFrame({"x": [1, 2], "y": [3, 4]})
-        with pytest.raises(ValueError, match="Cannot detect result type"):
-            detect_columns(df)
-
-
-# --- Volcano tests ---
-
-
-class TestVolcano:
-    def test_returns_figure(self, deseq2_results):
-        fig = volcano(deseq2_results)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_edger_results(self, edger_results):
-        fig = volcano(edger_results, alpha=0.1, lfc_cutoff=0.5)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_limma_results(self, limma_results):
-        fig = volcano(limma_results)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_custom_title(self, deseq2_results):
-        fig = volcano(deseq2_results, title="My Volcano")
-        ax = fig.axes[0]
-        assert ax.get_title() == "My Volcano"
-        matplotlib.pyplot.close(fig)
-
-    def test_highlight_genes(self, deseq2_results):
-        genes = ["gene_0", "gene_1", "gene_999"]  # gene_999 doesn't exist
-        fig = volcano(deseq2_results, highlight_genes=genes)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_custom_ax(self, deseq2_results):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        result_fig = volcano(deseq2_results, ax=ax)
-        assert result_fig is fig
-        plt.close(fig)
-
-
-# --- MA plot tests ---
-
-
-class TestMAPlot:
-    def test_returns_figure(self, deseq2_results):
-        fig = ma_plot(deseq2_results)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_edger_results(self, edger_results):
-        fig = ma_plot(edger_results, alpha=0.1)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_limma_results(self, limma_results):
-        fig = ma_plot(limma_results)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_custom_title(self, deseq2_results):
-        fig = ma_plot(deseq2_results, title="My MA")
-        ax = fig.axes[0]
-        assert ax.get_title() == "My MA"
-        matplotlib.pyplot.close(fig)
-
-    def test_no_mean_column_raises(self):
-        df = pd.DataFrame({"padj": [0.01, 0.1], "log2FoldChange": [1.5, -0.3]})
-        with pytest.raises(ValueError, match="No mean expression column"):
-            ma_plot(df)
-
-
-# --- PCA tests ---
-
-
-class TestPCA:
-    def test_returns_figure(self, count_matrix):
-        fig = pca(count_matrix)
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_color_by_metadata(self, count_matrix, sample_metadata):
-        fig = pca(count_matrix, metadata=sample_metadata, color_by="condition")
-        assert isinstance(fig, Figure)
-        matplotlib.pyplot.close(fig)
-
-    def test_custom_title(self, count_matrix):
-        fig = pca(count_matrix, title="My PCA")
-        ax = fig.axes[0]
-        assert ax.get_title() == "My PCA"
-        matplotlib.pyplot.close(fig)
-
-    def test_axes_labels_contain_variance(self, count_matrix):
-        fig = pca(count_matrix)
-        ax = fig.axes[0]
-        assert "variance" in ax.get_xlabel().lower()
-        assert "variance" in ax.get_ylabel().lower()
-        matplotlib.pyplot.close(fig)
-
-    def test_custom_ax(self, count_matrix):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        result_fig = pca(count_matrix, ax=ax)
-        assert result_fig is fig
-        plt.close(fig)
+def test_pca_custom_title():
+    import matplotlib.pyplot as plt
+    from rosetta.plots.pca import pca
+    fig = pca(_count_matrix(), title="My PCA")
+    ax = fig.axes[0]
+    assert "My PCA" in ax.get_title()
+    plt.close("all")

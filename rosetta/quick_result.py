@@ -211,7 +211,7 @@ def _report_edger(data: Dict[str, Any], metadata: Dict[str, Any], **kwargs) -> s
 def _report_generic(data: Dict[str, Any], metadata: Dict[str, Any], **kwargs) -> str:
     """Fallback reporter for unknown methods."""
     lines = [
-        f"QuickResult Summary",
+        "QuickResult Summary",
         "─" * 30,
         f"Keys: {list(data.keys())}",
     ]

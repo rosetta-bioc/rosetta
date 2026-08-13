@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-08-11
+
+### Added
+- `pytest-cov>=4.0` added to `dev` extras; `[tool.pytest.ini_options]` in `pyproject.toml` so `pytest` always collects coverage locally
+- CI (`tests.yml`) now runs `--cov=rosetta --cov-report=xml` and uploads to Codecov (Python 3.12 only, non-fatal)
+- `phyloseq` and `Seurat` added to `install.R` so property-based invariant tests run (not skip) in CI
+
+### Changed
+- Removed misleading `posit` optional-dependency extra (was a duplicate of the core `rpy2` requirement)
+
+### Fixed
+- Mock-based unit tests for `Limma.run_fit`, `apply_contrasts`, `run_ebayes`, `get_results` — closes coverage gap for lines unreachable without a live R session
+
 ## [0.3.2] - 2026-08-11
 
 ### Added

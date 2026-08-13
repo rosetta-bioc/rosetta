@@ -5,7 +5,6 @@ import contextlib
 import subprocess
 import tempfile
 import json
-import numpy as np
 import pandas as pd
 
 from rosetta.utils import filter_kwargs
@@ -158,9 +157,9 @@ class BaseWrapper:
         try:
             subprocess.run([find_rscript(), runner_script_path], check=True, capture_output=True)
             with open(out_path, "r") as f_out:
-                res = json.load(f_out)
-            # Return reconstructed DataFrame or object to align with standard pipeline
-            return pd.DataFrame()
+                raw = json.load(f_out)
+            # TODO: deserialize `raw` into the appropriate return type
+            return pd.DataFrame(raw)
         finally:
             # Clean up temporary files
             for p in [in_path, out_path, runner_script_path]:

@@ -72,7 +72,6 @@ def vcf_to_dataframe(vcf) -> pd.DataFrame:
         DataFrame with fixed fields and INFO columns.
     """
     ensure_installed("VariantAnnotation")
-    base = importr("base")
 
     with localconverter(_converter):
         # Use R-side code to produce a clean data.frame with character columns

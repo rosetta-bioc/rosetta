@@ -53,7 +53,7 @@ def main():
 
     # Show top genes
     sig = results[results["padj"] < 0.05].sort_values("log2FoldChange", ascending=False)
-    print(f"\nTop 5 upregulated genes:")
+    print("\nTop 5 upregulated genes:")
     print(sig[["log2FoldChange", "padj"]].head().to_string())
 
     print("\n✓ To run with real R packages:")

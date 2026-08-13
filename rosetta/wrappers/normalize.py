@@ -1,7 +1,7 @@
 """Normalization and transformation wrappers (DESeq2 VST/rlog, edgeR TMM)."""
 
 import pandas as pd
-from .._bridge import ACTIVE_BACKEND, _converter, to_r_matrix, to_r_dataframe, to_r_df
+from .._bridge import ACTIVE_BACKEND, _converter, to_r_matrix, to_r_dataframe
 from .._deps import ensure_installed
 from .._errors import RDataError
 

@@ -51,7 +51,14 @@ jobs:
       - name: Run tests
         env:
           RPY2_CFFI_MODE: API
-        run: pytest --junitxml=results.xml
+        run: pytest --junitxml=results.xml --cov=rosetta --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.12'
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
 
       - name: Report test results
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0

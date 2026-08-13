@@ -5,7 +5,6 @@ from rosetta.utils.kwargs import filter_kwargs
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
 from rosetta.stats.design import build_contrast_matrix
-from rosetta.stats.decide import run_decide_tests
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":
