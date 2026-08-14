@@ -2,83 +2,90 @@
 
 ## Overview
 
-`rosetta` is a Python library that wraps R bioinformatics packages (DESeq2, edgeR, limma, etc.) via `rpy2`, providing a pandas-native API.
+`rosetta` (`rosetta-bioc`) is a Python library that wraps R/Bioconductor bioinformatics packages (DESeq2, edgeR, limma, Seurat, phyloseq, clusterProfiler, etc.) via `rpy2`, providing a pandas-native API, reproducible codegen, and rich `.report()` summaries.
 
 ## Architecture
 
 ```
 rosetta/
-├── __init__.py          # Public API (rb.deseq2, rb.edger, etc.)
-├── _bridge.py           # rpy2 session management and R↔Python type conversion
-├── _deps.py             # R/Bioconductor package detection and installation
-├── _errors.py           # R error translation to Python exceptions
-├── wrappers/
+├── plots/               # Visualization wrappers and plotting utilities
+├── stats/               # Statistical helper functions
+├── utils/               # Internal utility functions
+├── wrappers/            # R package wrappers
 │   ├── __init__.py
 │   ├── deseq2.py        # DESeq2 wrapper
-│   ├── edger.py         # edgeR wrapper
+│   ├── edger.py         # EdgeR wrapper
 │   ├── limma.py         # limma-voom wrapper
 │   ├── seurat.py        # Seurat wrapper
-│   ├── clusterprofiler.py
-│   └── phyloseq.py
-└── tests/
-    ├── conftest.py      # Shared fixtures (sample counts, metadata)
-    ├── test_bridge.py
-    └── test_deseq2.py
+│   ├── clusterprofiler.py # ORA and GSEA wrapper
+│   ├── phyloseq.py      # Microbiome diversity and ordination wrapper
+│   ├── normalize.py     # Normalization wrapper
+│   ├── vcf.py           # VCF parsing wrapper
+│   └── variant_annotation.py
+├── __init__.py          # Public API (Tier 1 quick functions, Tier 2 classes, aliases)
+├── __main__.py          # CLI entry point
+├── _bridge.py           # rpy2 session management and R↔Python type conversion
+├── _deps.py             # R/Bioconductor package detection and installation
+├── _detect.py           # Environment and package detection utilities
+├── _errors.py           # R error translation to Python exceptions
+├── codegen.py           # R code generation and tracking mechanism
+├── example.py           # Built-in usage examples
+├── pipelines.py         # Multi-step analysis pipelines
+├── quick_result.py      # QuickResult container with .report() formatting
+├── results.py           # RosettaDataFrame subclass for pandas outputs with .report()
+├── sklearn_compat.py    # scikit-learn compatibility layer
+
 ```
 
 ## Core Components
 
 ### 1. Bridge Layer (`_bridge.py`)
 
-Manages a single `rpy2` R session and handles all type conversion.
+Manages a single `rpy2` R session and handles all type conversion between Python and R.
 
-Key conversions:
-- `pandas.DataFrame` ↔ `R data.frame`
-- `numpy.ndarray` ↔ `R matrix`
-- Python `dict` ↔ `R named list`
-- `None` ↔ `R NULL`
+* Key conversions:
+* `pandas.DataFrame` ↔ `R data.frame`
+* `numpy.ndarray` ↔ `R matrix`
+* Python `dict` ↔ `R named list`
+* `None` ↔ `R NULL`
 
-### 2. Dependency Manager (`_deps.py`)
 
-On first use of a wrapper, checks if the required R package is installed. If missing, installs via `BiocManager::install()` with user confirmation.
 
-### 3. Error Translation (`_errors.py`)
+### 2. Three-Tier API Design
 
-Catches `rpy2.rinterface_lib.embedded.RRuntimeError` and maps common R errors to descriptive Python exceptions:
-- `RPackageMissing` — R package not installed
-- `RFormulaError` — invalid design formula
-- `RDataError` — incompatible input data (e.g. negative counts for DESeq2)
+* **Tier 1 — Quick API (`quick_*()`)**: One-liner functions (e.g., `quick_deseq2`, `quick_edger`, `quick_seurat`, `quick_phyloseq`) optimized for rapid notebook analysis. Returns `RosettaDataFrame` or `QuickResult` with built-in `.report()` methods.
+* **Tier 2 — Class-based API (`Seurat()`, `DESeq2()`, `Phyloseq()`)**: Stateful, chainable wrappers providing step-by-step pipeline control.
+* **Tier 3 — Escape Hatch / Functional API**: Direct access to underlying R objects (`model.r_obj`) and execution of custom R snippets (`model.run_r_script()`), along with granular functional operations.
 
-### 4. Wrapper Pattern
+### 3. Dependency Manager (`_deps.py` & `_detect.py`)
 
-Each wrapper follows the same structure:
+* Checks if required R/Bioconductor packages are installed prior to execution.
+* If missing, guides or triggers installation via `BiocManager::install()`.
 
-```python
-def deseq2(counts: pd.DataFrame, metadata: pd.DataFrame, design: str, **kwargs) -> pd.DataFrame:
-    """Run DESeq2 differential expression analysis."""
-    ensure_installed("DESeq2")
-    r_counts = to_r_matrix(counts)
-    r_metadata = to_r_dataframe(metadata)
-    # Call R functions via rpy2
-    # Return results as pandas DataFrame
-```
+### 4. Error Translation (`_errors.py`)
 
-All wrappers:
-- Accept pandas DataFrames as input
-- Return pandas DataFrames as output
-- Expose R parameters as Python keyword arguments
-- Validate inputs before crossing the R boundary
+Catches `rpy2` runtime exceptions and maps them to descriptive Python errors:
+
+* `RPackageMissing` — R package not installed
+* `RFormulaError` — invalid R design formula
+* `RDataError` — incompatible input data (e.g., negative counts)
+
+### 5. Transparency & Codegen (`codegen.py`)
+
+* Tracks and logs executed R commands behind the scenes.
+* Allows users to inspect or export equivalent native R scripts (`rb.codegen.enable()`, `rb.codegen.last()`).
 
 ## Design Decisions
 
-- **Wrap, don't reimplement** — statistical correctness comes from the original R packages
-- **Lazy R initialization** — R session starts on first wrapper call, not on import
-- **One function per analysis** — `rb.deseq2()` runs the full DESeq2 pipeline (DESeqDataSet → DESeq → results)
-- **Sensible defaults** — match R package defaults, but allow override via `**kwargs`
+* **Wrap, don't reimplement** — statistical correctness relies entirely on original R/Bioconductor packages.
+* **Pandas-native** — inputs are pandas DataFrames/Series, outputs are `RosettaDataFrame` subclasses supporting `.report()`.
+* **Lazy R initialization** — R session starts on first wrapper call, not upon import.
+* **Reproducibility first** — seamless translation between Python interface and R execution backend.
 
 ## Dependencies
 
-- `rpy2 >= 3.5`
-- `pandas >= 1.5`
-- `numpy >= 1.23`
-- R 4.0+ with BiocManager
+* Python 3.9+
+* `rpy2 >= 3.5`
+* `pandas >= 1.5`
+* `numpy >= 1.23`
+* R 4.0+ with BiocManager
