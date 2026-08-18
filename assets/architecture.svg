@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="636" viewBox="0 0 860 636" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="860" height="636" fill="#fcfcfb"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#c9c7c0"/></marker></defs>
+<text x="30" y="34" font-size="15.5" font-weight="600" fill="#0b0b0b">rosetta architecture — three tiers over one bridge</text>
+<text x="30" y="53" font-size="11.5" fill="#52514e">Every tier funnels into the same R session; every result comes back as a pandas subclass.</text>
+<rect x="30" y="78" width="250" height="118" rx="9" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="155.0" y="102" font-size="12.5" font-weight="700" fill="#2a78d6" text-anchor="middle">Tier 1 — Quick</text>
+<text x="155.0" y="122" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">quick_deseq2()  quick_edger()</text>
+<text x="155.0" y="137" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">quick_seurat()  quick_phyloseq()</text>
+<text x="155.0" y="152" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">one call, notebook-ready</text>
+<rect x="305" y="78" width="250" height="118" rx="9" fill="#fdefe7" stroke="#eb6834" stroke-width="1.5"/>
+<text x="430.0" y="102" font-size="12.5" font-weight="700" fill="#eb6834" text-anchor="middle">Tier 2 — Class-based</text>
+<text x="430.0" y="122" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">DESeq2()  EdgeR()  Limma()</text>
+<text x="430.0" y="137" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">Seurat()  Phyloseq()  ClusterProfiler()</text>
+<text x="430.0" y="152" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">stateful, chainable, every R kwarg</text>
+<rect x="580" y="78" width="250" height="118" rx="9" fill="#e4f6ef" stroke="#1baf7a" stroke-width="1.5"/>
+<text x="705.0" y="102" font-size="12.5" font-weight="700" fill="#1baf7a" text-anchor="middle">Tier 3 — Escape hatch</text>
+<text x="705.0" y="122" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">model.r_obj</text>
+<text x="705.0" y="137" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">model.run_r_script()</text>
+<text x="705.0" y="152" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">raw rpy2, nothing hidden</text>
+<line x1="155" y1="196" x2="155" y2="248" stroke="#c9c7c0" stroke-width="1.5" marker-end="url(#a)"/>
+<line x1="430" y1="196" x2="430" y2="248" stroke="#c9c7c0" stroke-width="1.5" marker-end="url(#a)"/>
+<line x1="705" y1="196" x2="705" y2="248" stroke="#c9c7c0" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="30" y="250" width="800" height="150" rx="11" fill="#f4f3f0" stroke="#c9c7c0" stroke-width="1.5"/>
+<text x="46" y="272" font-size="11" font-weight="700" fill="#8a8880" letter-spacing="0.6">ROSETTA CORE</text>
+<rect x="46" y="284" width="240" height="100" rx="9" fill="#fcfcfb" stroke="#c9c7c0" stroke-width="1.5"/>
+<text x="166.0" y="308" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">_bridge.py</text>
+<text x="166.0" y="328" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">one lazy R session</text>
+<text x="166.0" y="343" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">pandas  ↔  data.frame</text>
+<text x="166.0" y="358" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">dict ↔ named list, None ↔ NULL</text>
+<rect x="300" y="284" width="168" height="100" rx="9" fill="#fcfcfb" stroke="#c9c7c0" stroke-width="1.5"/>
+<text x="384.0" y="308" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">_deps.py / _detect.py</text>
+<text x="384.0" y="328" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">Bioconductor</text>
+<text x="384.0" y="343" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">detection + install</text>
+<text x="384.0" y="358" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">fail before the R call</text>
+<rect x="482" y="284" width="150" height="100" rx="9" fill="#fcfcfb" stroke="#c9c7c0" stroke-width="1.5"/>
+<text x="557.0" y="308" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">_errors.py</text>
+<text x="557.0" y="328" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">RPackageMissing</text>
+<text x="557.0" y="343" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">RFormulaError</text>
+<text x="557.0" y="358" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">RDataError</text>
+<rect x="646" y="284" width="168" height="100" rx="9" fill="#fcfcfb" stroke="#c9c7c0" stroke-width="1.5"/>
+<text x="730.0" y="308" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">codegen.py</text>
+<text x="730.0" y="328" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">rb.codegen.enable()</text>
+<text x="730.0" y="343" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">emits the R script</text>
+<text x="730.0" y="358" font-size="10" fill="#8a8880" font-style="italic" text-anchor="middle">verify / reproduce</text>
+<line x1="430" y1="400" x2="430" y2="428" stroke="#c9c7c0" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="160" y="430" width="540" height="74" rx="9" fill="#ffffff" stroke="#0b0b0b" stroke-width="1.5"/>
+<text x="430.0" y="454" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">R / Bioconductor</text>
+<text x="430.0" y="474" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">DESeq2 · edgeR · limma · clusterProfiler · Seurat · phyloseq · VariantAnnotation</text>
+<text x="430" y="519" font-size="10" font-style="italic" fill="#8a8880" text-anchor="middle">statistics run in the original R code — rosetta never reimplements them</text>
+<line x1="430" y1="522" x2="430" y2="546" stroke="#c9c7c0" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="210" y="548" width="440" height="64" rx="9" fill="#f4f3f0" stroke="#8a8880" stroke-width="1.5"/>
+<text x="430.0" y="572" font-size="12.5" font-weight="700" fill="#0b0b0b" text-anchor="middle">RosettaDataFrame</text>
+<text x="430.0" y="592" font-size="10.5" fill="#52514e" font-family="SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">pandas subclass · .report() · .volcano() · .ma_plot()</text>
+</svg>
