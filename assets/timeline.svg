@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="490" viewBox="0 0 980 490" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="980" height="490" fill="#fcfcfb"/>
+<text x="30" y="32" font-size="15.5" font-weight="600" fill="#0b0b0b">12-week coding period — what shipped when</text>
+<text x="30" y="51" font-size="11.5" fill="#52514e">May 26 – August 25, 2026 · 350 hours · one focused PR per row</text>
+<line x1="336.0" y1="78" x2="336.0" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="361.4" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W1</text>
+<line x1="386.8" y1="78" x2="386.8" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="412.2" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W2</text>
+<line x1="437.7" y1="78" x2="437.7" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="463.1" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W3</text>
+<line x1="488.5" y1="78" x2="488.5" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="513.9" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W4</text>
+<line x1="539.3" y1="78" x2="539.3" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="564.8" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W5</text>
+<line x1="590.2" y1="78" x2="590.2" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="615.6" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W6</text>
+<line x1="641.0" y1="78" x2="641.0" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="666.4" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W7</text>
+<line x1="691.8" y1="78" x2="691.8" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="717.2" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W8</text>
+<line x1="742.7" y1="78" x2="742.7" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="768.1" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W9</text>
+<line x1="793.5" y1="78" x2="793.5" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="818.9" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W10</text>
+<line x1="844.3" y1="78" x2="844.3" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="869.8" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W11</text>
+<line x1="895.2" y1="78" x2="895.2" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="920.6" y="72" font-size="9.5" fill="#8a8880" text-anchor="middle">W12</text>
+<line x1="946.0" y1="78" x2="946.0" y2="422" stroke="#eceae6" stroke-width="1"/>
+<text x="336.0" y="440" font-size="10" fill="#8a8880" text-anchor="middle">May 26</text>
+<text x="539.3" y="440" font-size="10" fill="#8a8880" text-anchor="middle">Jun 23</text>
+<text x="742.7" y="440" font-size="10" fill="#8a8880" text-anchor="middle">Jul 21</text>
+<text x="946.0" y="440" font-size="10" fill="#8a8880" text-anchor="middle">Aug 25</text>
+<line x1="691.8" y1="78" x2="691.8" y2="422" stroke="#eda100" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="691.8" y="56" font-size="10" font-weight="600" fill="#eda100" text-anchor="middle">Midterm eval</text>
+<text x="946.0" y="56" font-size="10" font-weight="600" fill="#eda100" text-anchor="end">Final eval</text>
+<rect x="30" y="101" width="4" height="100" rx="2" fill="#2a78d6"/>
+<text x="44" y="156" font-size="12" font-weight="700" fill="#2a78d6">Deepen wrappers</text>
+<text x="322" y="114.0" font-size="10.5" fill="#52514e" text-anchor="end">DESeq2 — lfcShrink, contrasts, LFC threshold</text>
+<rect x="337.5" y="104" width="47.8" height="13" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="322" y="141.0" font-size="10.5" fill="#52514e" text-anchor="end">edgeR + limma — TREAT, quasi-likelihood, decideTests</text>
+<rect x="388.3" y="131" width="47.8" height="13" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="322" y="168.0" font-size="10.5" fill="#52514e" text-anchor="end">clusterProfiler — ORA + GSEA</text>
+<rect x="439.2" y="158" width="47.8" height="13" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="322" y="195.0" font-size="10.5" fill="#52514e" text-anchor="end">Seurat + phyloseq — FindMarkers, ordination</text>
+<rect x="490.0" y="185" width="47.8" height="13" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<rect x="30" y="209" width="4" height="100" rx="2" fill="#eb6834"/>
+<text x="44" y="264" font-size="12" font-weight="700" fill="#eb6834">Three-tier API</text>
+<text x="322" y="222.0" font-size="10.5" fill="#52514e" text-anchor="end">Tier 1 — Quick API</text>
+<rect x="540.8" y="212" width="47.8" height="13" rx="4" fill="#fdefe7" stroke="#eb6834" stroke-width="1.5"/>
+<text x="322" y="249.0" font-size="10.5" fill="#52514e" text-anchor="end">Tier 2 — class-based API, JOSS paper</text>
+<rect x="591.7" y="239" width="47.8" height="13" rx="4" fill="#fdefe7" stroke="#eb6834" stroke-width="1.5"/>
+<text x="322" y="276.0" font-size="10.5" fill="#52514e" text-anchor="end">Tier 3 — R escape hatch</text>
+<rect x="642.5" y="266" width="47.8" height="13" rx="4" fill="#fdefe7" stroke="#eb6834" stroke-width="1.5"/>
+<text x="322" y="303.0" font-size="10.5" fill="#52514e" text-anchor="end">subprocess / Rscript fallback backend</text>
+<rect x="693.3" y="293" width="47.8" height="13" rx="4" fill="#fdefe7" stroke="#eb6834" stroke-width="1.5"/>
+<rect x="30" y="317" width="4" height="100" rx="2" fill="#1baf7a"/>
+<text x="44" y="372" font-size="12" font-weight="700" fill="#1baf7a">Trust + docs</text>
+<text x="322" y="330.0" font-size="10.5" fill="#52514e" text-anchor="end">Validation vs direct R (airway, pasilla)</text>
+<rect x="744.2" y="320" width="47.8" height="13" rx="4" fill="#e4f6ef" stroke="#1baf7a" stroke-width="1.5"/>
+<text x="322" y="357.0" font-size="10.5" fill="#52514e" text-anchor="end">Property-based + integration tests, CI</text>
+<rect x="795.0" y="347" width="47.8" height="13" rx="4" fill="#e4f6ef" stroke="#1baf7a" stroke-width="1.5"/>
+<text x="322" y="384.0" font-size="10.5" fill="#52514e" text-anchor="end">Docs site, guides, tutorial notebook</text>
+<rect x="845.8" y="374" width="47.8" height="13" rx="4" fill="#e4f6ef" stroke="#1baf7a" stroke-width="1.5"/>
+<text x="322" y="411.0" font-size="10.5" fill="#52514e" text-anchor="end">sklearn compat, plots, final polish</text>
+<rect x="896.7" y="401" width="47.8" height="13" rx="4" fill="#e4f6ef" stroke="#1baf7a" stroke-width="1.5"/>
+<text x="30" y="476" font-size="10" fill="#8a8880">Each bar corresponds to a merged pull request and a dated entry in CHANGELOG.md.</text>
+</svg>
