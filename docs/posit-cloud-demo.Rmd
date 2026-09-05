@@ -1,0 +1,201 @@
+---
+title: "DESeq2 differential expression via rosetta-bioc"
+subtitle: "Posit Cloud demo — Python + R + Bioconductor"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(reticulate)
+use_python(Sys.which("python3"), required = TRUE)
+knitr::knit_engines$set(python = reticulate::eng_python)
+```
+
+## Prerequisites
+
+```{r install, message=TRUE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (!requireNamespace("DESeq2", quietly = TRUE))
+    BiocManager::install("DESeq2", ask = FALSE)
+```
+
+```{bash pip-install, eval=FALSE}
+pip install --quiet rosetta-bioc matplotlib
+```
+
+---
+
+## 1. Simulate a count dataset
+
+We simulate 500 genes × 6 samples (3 treated, 3 untreated) with ~200 truly
+differentially expressed genes. This keeps memory well within Posit Cloud's
+limits while exercising the full rosetta + DESeq2 pipeline.
+
+```{r load-airway}
+set.seed(42)
+n_genes   <- 500
+n_samples <- 6
+
+# baseline counts drawn from negative binomial
+baseline <- rnbinom(n_genes * n_samples, mu = 100, size = 5)
+counts_r  <- matrix(baseline, nrow = n_genes, ncol = n_samples)
+
+# inject 200 DE genes: 2× up in treated samples
+de_idx <- 1:200
+counts_r[de_idx, 4:6] <- round(counts_r[de_idx, 4:6] * 2)
+
+rownames(counts_r) <- paste0("gene", seq_len(n_genes))
+colnames(counts_r) <- paste0("sample", seq_len(n_samples))
+
+coldata_r <- data.frame(
+    dex = c("untrt", "untrt", "untrt", "trt", "trt", "trt"),
+    row.names = colnames(counts_r)
+)
+
+cat("Genes:  ", nrow(counts_r), "\n")
+cat("Samples:", ncol(counts_r), "\n")
+print(table(coldata_r$dex))
+```
+
+```{python hand-to-python}
+import numpy as np
+import pandas as pd
+import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri
+
+r_counts  = ro.r["counts_r"]
+r_coldata = ro.r["coldata_r"]
+
+genes   = list(r_counts.rownames)
+samples = list(r_counts.colnames)
+
+# rpy2 flattens R matrices column-major; reshape then transpose → (genes × samples)
+arr = np.array(r_counts).reshape(len(genes), len(samples), order="F")
+counts = pd.DataFrame(arr, index=genes, columns=samples)
+
+with (ro.default_converter + pandas2ri.converter).context():
+    metadata = ro.conversion.rpy2py(r_coldata)
+
+metadata.index  = samples
+metadata["dex"] = metadata["dex"].astype(str)
+
+print(f"Count matrix : {counts.shape[0]:,} genes × {counts.shape[1]} samples")
+print(f"Conditions   : {metadata['dex'].value_counts().to_dict()}")
+counts.iloc[:3, :4]
+```
+
+---
+
+## 2. Run DESeq2 via rosetta
+
+One call — `quick_deseq2` builds the DESeqDataSet, fits the model, and returns
+results as a **pandas DataFrame**.
+
+```{python run-deseq2}
+import rosetta as rb
+
+results = rb.quick_deseq2(
+    counts,
+    metadata,
+    design="~ dex",
+    alpha=0.05,
+)
+
+print(type(results))
+results.head()
+```
+
+---
+
+## 4. Summary
+
+```{python summary}
+results.report()
+```
+
+---
+
+## 5. Top differentially expressed genes
+
+```{python top-genes}
+sig = results.dropna(subset=["padj"]).query("padj < 0.05")
+print(f"{len(sig):,} significant genes (FDR < 5%)")
+
+top10 = sig.sort_values("log2FoldChange", key=abs, ascending=False).head(10)
+top10[["baseMean", "log2FoldChange", "lfcSE", "padj"]]
+```
+
+---
+
+## 6. Volcano plot
+
+```{python volcano, fig.width=8, fig.height=6}
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+plot_df = results.dropna(subset=["padj", "log2FoldChange"]).copy()
+plot_df["neg_log10_padj"] = -np.log10(plot_df["padj"].clip(lower=1e-300))
+
+is_sig = plot_df["padj"] < 0.05
+is_up  = is_sig & (plot_df["log2FoldChange"] >  1)
+is_dn  = is_sig & (plot_df["log2FoldChange"] < -1)
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+ax.scatter(plot_df.loc[~is_sig, "log2FoldChange"],
+           plot_df.loc[~is_sig, "neg_log10_padj"],
+           s=6, color="#aaaaaa", alpha=0.5, label="not significant")
+ax.scatter(plot_df.loc[is_up, "log2FoldChange"],
+           plot_df.loc[is_up, "neg_log10_padj"],
+           s=10, color="#e05c5c", alpha=0.8, label=f"up ({is_up.sum()})")
+ax.scatter(plot_df.loc[is_dn, "log2FoldChange"],
+           plot_df.loc[is_dn, "neg_log10_padj"],
+           s=10, color="#5c88e0", alpha=0.8, label=f"down ({is_dn.sum()})")
+
+ax.axhline(-np.log10(0.05), color="black", lw=0.8, ls="--", alpha=0.6)
+ax.axvline( 1, color="black", lw=0.8, ls="--", alpha=0.4)
+ax.axvline(-1, color="black", lw=0.8, ls="--", alpha=0.4)
+
+for gene, row in top10.head(5).iterrows():
+    ax.annotate(gene, (row["log2FoldChange"], -np.log10(row["padj"])),
+                fontsize=7, xytext=(4, 2), textcoords="offset points")
+
+ax.set_xlabel("log₂ fold change (trt vs untrt)", fontsize=12)
+ax.set_ylabel("−log₁₀ adjusted p-value", fontsize=12)
+ax.set_title("airway dataset — DESeq2 via rosetta-bioc", fontsize=13)
+ax.legend(frameon=False, fontsize=10)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## What just happened
+
+| Step | Tool |
+|------|------|
+| Simulate RNA-seq counts | R `rnbinom` (500 genes × 6 samples) |
+| Fit NB model + Wald test | DESeq2 1.52.0 (R 4.6.1 / Bioc 3.23) |
+| Results back in Python | `rosetta.quick_deseq2()` → `RosettaDataFrame` |
+| Volcano plot | matplotlib |
+
+You wrote Python throughout. DESeq2 never left R — rosetta bridged the two
+transparently.
+
+### Next steps
+
+```python
+# LFC shrinkage
+model = rb.DESeq2(counts_filt, metadata, "~ dex")
+model.run_deseq()
+shrunk = model.lfc_shrink(coef=2, type="apeglm")
+
+# edgeR instead — same API
+results_edger = rb.quick_edger(counts_filt, metadata, design="~ dex")
+```
