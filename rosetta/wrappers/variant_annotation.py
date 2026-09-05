@@ -6,12 +6,13 @@ for intermediate pipeline steps).
 """
 
 import os
+
 import pandas as pd
 
+from .. import codegen
 from .._bridge import ACTIVE_BACKEND, _converter, to_pandas, to_r_df
 from .._deps import ensure_installed
 from .._errors import RDataError
-from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
 if ACTIVE_BACKEND == "rpy2":

@@ -1,10 +1,21 @@
 """edgeR differential expression wrapper."""
 
 import pandas as pd
-from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, to_r_df, r_nrow
-from rosetta.utils.kwargs import filter_kwargs
+
+from rosetta._bridge import (
+    ACTIVE_BACKEND,
+    BaseWrapper,
+    _converter,
+    r_nrow,
+    to_pandas,
+    to_r_dataframe,
+    to_r_df,
+    to_r_matrix,
+)
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
+from rosetta.utils.kwargs import filter_kwargs
+
 from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
@@ -29,7 +40,7 @@ class EdgeR(BaseWrapper):
         stats_pkg = importr("stats")
 
         obj = self._fit_model(counts, metadata, design, stats_pkg)
-        
+
         super().__init__(obj, self.edger_pkg)
 
     def _fit_model(self, counts, metadata, design, stats_pkg):
@@ -39,7 +50,7 @@ class EdgeR(BaseWrapper):
             raise RDataError("Count matrix columns must match metadata row names")
         r_counts = to_r_matrix(counts)
         r_metadata = to_r_dataframe(metadata)
-        
+
         with localconverter(_converter):
             try:
                 r_design = stats_pkg.model_matrix(ro.Formula(design), data=r_metadata)
@@ -58,7 +69,7 @@ class EdgeR(BaseWrapper):
     def run_test(self, lfc: float = 0, **kwargs):
         """Perform glmTreat (if lfc > 0) or glmQLFTest."""
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_TEST)
-        
+
         with localconverter(_converter):
             if lfc > 0:
                 r_kwargs["lfc"] = lfc
@@ -67,7 +78,7 @@ class EdgeR(BaseWrapper):
             else:
                 codegen._emit("test <- glmQLFTest(fit, ...)")
                 res = self.edger_pkg.glmQLFTest(self.obj, **r_kwargs)
-            
+
             return res
 
     def get_results(self, res_obj, **kwargs) -> pd.DataFrame:

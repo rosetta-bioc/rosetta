@@ -1,4 +1,5 @@
 import logging
+
 # Safely try importing rpy2 for keyword filtering if available
 try:
     import rpy2.robjects as ro
@@ -14,7 +15,7 @@ def filter_kwargs(kwargs, allowed_args):
         if key not in allowed_args:
             logging.warning(f"Parameter '{key}' is not supported and will be ignored.")
             continue
-            
+
         if isinstance(value, bool):
             filtered[key] = value # rpy2 handles bool automatically
         elif isinstance(value, list):
@@ -35,5 +36,5 @@ def filter_kwargs(kwargs, allowed_args):
                 filtered[key] = None
         else:
             filtered[key] = value
-            
+
     return filtered

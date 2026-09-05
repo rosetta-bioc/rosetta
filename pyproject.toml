@@ -48,3 +48,12 @@ Changelog = "https://github.com/rosetta-bioc/rosetta/blob/main/CHANGELOG.md"
 [tool.setuptools.packages.find]
 include = ["rosetta*"]
 exclude = ["tests*", "examples*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+# E501 violations that remain after setting line-length = 100 are in long R
+# formula strings and auto-generated docstrings; suppress rather than wrap.
+ignore = []

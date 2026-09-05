@@ -13,10 +13,12 @@ def teardown_function():
     codegen.clear()
 
 
-def test_emit_is_ignored_when_codegen_is_disabled(capsys):
+def test_emit_always_logs_but_does_not_print_when_disabled(capsys):
+    # The log always records so callers can inspect via codegen.last();
+    # printing is suppressed when codegen is disabled.
     codegen._emit("dds <- DESeq(dds)")
 
-    assert codegen.last() == ""
+    assert codegen.last() == "dds <- DESeq(dds)"
     assert capsys.readouterr().out == ""
 
 

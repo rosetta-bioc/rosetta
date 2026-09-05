@@ -1,8 +1,8 @@
 """Environment detection, backend selection, and R package version pinning."""
 
-import subprocess
-import shutil
 import json
+import shutil
+import subprocess
 import warnings
 from typing import Optional
 
@@ -19,7 +19,7 @@ def check_rpy2_available() -> bool:
         import importlib.util
         if importlib.util.find_spec("rpy2") is None:
             return False
-        
+
         import rpy2.robjects as ro
         ro.r("1 + 1")
         return True
@@ -74,11 +74,11 @@ def detect_backend() -> str:
     """
     if check_rpy2_available():
         return "rpy2"
-    
+
     # Check if Rscript is present; if not, fallback gracefully instead of crashing
     rscript_path = find_rscript()
     if rscript_path is None:
         # if there is no R in Python environment, return sth to install the module safely
         return "fallback"
-        
+
     return "subprocess"

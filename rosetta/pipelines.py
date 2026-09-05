@@ -3,8 +3,10 @@
 These are the "I just want results" functions. Each one runs the full
 statistical pipeline and returns a RosettaDataFrame with .report().
 """
-from typing import Optional, List
+from typing import List, Optional
+
 import pandas as pd
+
 from .results import RosettaDataFrame
 
 
@@ -39,15 +41,16 @@ def diff_expr(
         >>> sig_genes = results[results["padj"] < 0.05]
     """
     if method == "deseq2":
-        from .wrappers.deseq2 import run_deseq2, get_results, lfc_shrink
+        from .wrappers.deseq2 import get_results, lfc_shrink, run_deseq2
 
         dds = run_deseq2(counts, metadata, design)
 
         if shrinkage:
             # Need coefficient name for shrinkage
-            from rpy2.robjects.packages import importr
-            from ._bridge import _converter
             from rpy2.robjects.conversion import localconverter
+            from rpy2.robjects.packages import importr
+
+            from ._bridge import _converter
             deseq2_pkg = importr("DESeq2")
             with localconverter(_converter):
                 coefs = list(deseq2_pkg.resultsNames(dds))

@@ -1,10 +1,20 @@
 """limma-voom differential expression wrapper."""
 import pandas as pd
-from rosetta._bridge import ACTIVE_BACKEND, BaseWrapper, _converter, to_r_matrix, to_r_dataframe, to_pandas, r_nrow
-from rosetta.utils.kwargs import filter_kwargs
+
+from rosetta._bridge import (
+    ACTIVE_BACKEND,
+    BaseWrapper,
+    _converter,
+    r_nrow,
+    to_pandas,
+    to_r_dataframe,
+    to_r_matrix,
+)
 from rosetta._deps import ensure_installed
 from rosetta._errors import RDataError, RFormulaError
 from rosetta.stats.design import build_contrast_matrix
+from rosetta.utils.kwargs import filter_kwargs
+
 from .. import codegen
 
 # Conditionally import rpy2 components based on the active backend
@@ -28,14 +38,14 @@ class Limma(BaseWrapper):
     def __init__(self, counts: pd.DataFrame, metadata: pd.DataFrame, design: str = "~ condition"):
         ensure_installed("limma")
         ensure_installed("edgeR")
-        
+
         self.limma_pkg = importr("limma")
         self.edger_pkg = importr("edgeR")
         stats_pkg = importr("stats")
 
         # 1. Fitting logic
         obj = self._fit_model(counts, metadata, design, stats_pkg)
-        
+
         # 2. call BaseWrapper
         super().__init__(obj, self.limma_pkg)
 
@@ -66,14 +76,14 @@ class Limma(BaseWrapper):
     def apply_contrasts(self, contrast: list):
         """Apply contrast matrix to fitted model."""
         with localconverter(_converter):
-            design_matrix = self.obj.rx2("design") 
+            design_matrix = self.obj.rx2("design")
             design_colnames = design_matrix.colnames
-            
+
             contrast_mat = build_contrast_matrix(design_colnames, contrast)
             codegen._emit("fit <- contrasts.fit(fit, contrast.matrix)")
             self.obj = self.limma_pkg.contrasts_fit(self.obj, contrast_mat)
         return self
-    
+
     def run_ebayes(self, **kwargs):
         """Perform empirical Bayes moderation."""
         # use call_r to process eBayes
@@ -84,7 +94,7 @@ class Limma(BaseWrapper):
         r_kwargs = filter_kwargs(kwargs, self._PARAMS_TOPTABLE)
         if "number" not in r_kwargs:
             r_kwargs["number"] = r_nrow(self.obj)
-            
+
         with localconverter(_converter):
             codegen._emit("res <- topTable(fit, ...)")
             res = self.limma_pkg.topTable(self.obj, **r_kwargs)
