@@ -1,61 +1,54 @@
 # edgeR Guide
 
-Complete guide to quasi-likelihood differential expression analysis with edgeR through rosetta.
+Complete guide to quasi-likelihood differential expression analysis with edgeR through rosetta. Covers basic usage, TREAT, custom contrasts, and multifactor designs.
 
 ---
 
 ## Overview
 
-Rosetta wraps edgeR's recommended **quasi-likelihood (QL) pipeline**:
+Rosetta wraps edgeR's recommended **quasi-likelihood (QL) pipeline** via the class-based `EdgeR` interface:
 
-1. Create DGEList → normalize (TMM) → fit QL model → test
+1. Create DGEList -> normalize (TMM) -> estimate dispersion -> fit QL model -> run test
 
 This is the pipeline recommended by Gordon Smyth (edgeR author) for most RNA-seq experiments. It provides more reliable error rate control than the older exact test or LRT approaches.
-
-!!! note
-    Rosetta skips `estimateDisp()` in the QL pipeline. Per edgeR v4 documentation, this step is only needed for diagnostic plots — `glmQLFit()` estimates dispersions internally.
 
 ---
 
 ## Basic analysis
 
+The simplest case: two conditions, one comparison using the `EdgeR` class:
+
 ```python
-from rosetta import edger
+import pandas as pd
+from rosetta import EdgeR
 
-results = edger(counts, metadata, design="~ condition")
+# Your count matrix: genes as rows, samples as columns
+# counts = pd.read_csv("counts.csv", index_col=0)
+# metadata = pd.read_csv("metadata.csv", index_col=0)
+
+# 1. Initialize and fit the model
+model = EdgeR(counts, metadata, design="~ condition")
+
+# 2. Run test and extract results
+res_obj = model.run_test(lfc=0)
+results = model.get_results(res_obj)
 results.report()
+
+# Filter significant genes
+sig = results[results["FDR"] < 0.05].sort_values("FDR")
+print(f"Found {len(sig)} significant genes")
 ```
-
-Output:
-
-```
-edgeR Results Summary
-──────────────────────────────
-Total genes tested:      12,000
-Significant (FDR<0.05):  756 (6.3%)
-  ↑ Upregulated:         390
-  ↓ Downregulated:       366
-logFC range:             [-3.82, 4.15]
-```
-
-### What happens internally
-
-1. `DGEList(counts)` — create the edgeR data object
-2. `calcNormFactors()` — TMM normalization
-3. `model.matrix(design, data=metadata)` — build design matrix
-4. `glmQLFit(dge, design)` — fit quasi-likelihood model
-5. `glmQLFTest(fit)` — quasi-likelihood F-test
-6. `topTags(res, n=Inf)` — extract all results
 
 ---
 
 ## With LFC threshold (TREAT)
 
-Use the `lfc` parameter to test whether fold changes exceed a minimum threshold. This uses edgeR's `glmTreat()` function — a proper statistical test, not post-hoc filtering.
+Use the `lfc` parameter in `run_test()` to test whether fold changes exceed a minimum threshold. This uses edgeR's `glmTreat()` function — a proper statistical test, not post-hoc filtering.
 
 ```python
 # Test for genes with |logFC| > 1 (2-fold change)
-results = edger(counts, metadata, design="~ condition", lfc=1.0)
+res_obj = model.run_test(lfc=1.0)
+results = model.get_results(res_obj)
 results.report()
 ```
 
@@ -67,11 +60,12 @@ When `lfc > 0`, rosetta calls `glmTreat()` instead of `glmQLFTest()`. The null h
 
 ### Numeric contrast vector
 
-Specify which coefficient(s) to test using a numeric vector corresponding to the design matrix columns:
+Specify which coefficient(s) to test using a numeric vector corresponding to the design matrix columns via the `contrast` parameter:
 
 ```python
 # Test the second coefficient (e.g., condition effect in "~ condition")
-results = edger(counts, metadata, design="~ condition", contrast=[0, 1])
+res_obj = model.run_test(contrast=[0, 1])
+results = model.get_results(res_obj)
 ```
 
 ### Multi-level factor
@@ -81,14 +75,16 @@ metadata = pd.DataFrame({
     "group": ["A", "A", "B", "B", "C", "C"],
 }, index=counts.columns)
 
+model = EdgeR(counts, metadata, design="~ group")
+
 # B vs A (second coefficient in a 3-level factor)
-results = edger(counts, metadata, design="~ group", contrast=[0, 1, 0])
+res_ba = model.get_results(model.run_test(contrast=[0, 1, 0]))
 
 # C vs A
-results = edger(counts, metadata, design="~ group", contrast=[0, 0, 1])
+res_ca = model.get_results(model.run_test(contrast=[0, 0, 1]))
 
 # B vs C (difference between non-reference levels)
-results = edger(counts, metadata, design="~ group", contrast=[0, 1, -1])
+res_bc = model.get_results(model.run_test(contrast=[0, 1, -1]))
 ```
 
 ---
@@ -103,8 +99,11 @@ metadata = pd.DataFrame({
     "condition": ["ctrl", "ctrl", "ctrl", "treat", "treat", "treat"],
 }, index=counts.columns)
 
-# Test condition while adjusting for batch
-results = edger(counts, metadata, design="~ batch + condition")
+model = EdgeR(counts, metadata, design="~ batch + condition")
+
+# Test condition while adjusting for batch (assuming condition is the last coefficient)
+res_obj = model.run_test(contrast=[0, 0, 1])
+results = model.get_results(res_obj)
 ```
 
 ### Interaction model
@@ -115,23 +114,25 @@ metadata = pd.DataFrame({
     "treatment": ["ctrl", "drug", "ctrl", "drug", "drug", "ctrl"],
 }, index=counts.columns)
 
-results = edger(counts, metadata, design="~ genotype * treatment")
+model = EdgeR(counts, metadata, design="~ genotype * treatment")
+res_obj = model.run_test()
+results = model.get_results(res_obj)
 ```
-
 ---
 
 ## Combining TREAT with contrasts
 
-You can use both `lfc` and `contrast` together:
+You can use both `lfc` and `contrast` together inside `run_test()`:
 
 ```python
+model = EdgeR(counts, metadata, design="~ batch + condition")
+
 # Test if the condition effect has |logFC| > 0.5, adjusting for batch
-results = edger(
-    counts, metadata,
-    design="~ batch + condition",
+res_obj = model.run_test(
     contrast=[0, 0, 1],  # condition coefficient
     lfc=0.5,
 )
+results = model.get_results(res_obj)
 ```
 
 ---
@@ -140,14 +141,16 @@ results = edger(
 
 ```python
 import pandas as pd
-from rosetta import edger
+from rosetta import EdgeR
 
 # Load data
 counts = pd.read_csv("counts.csv", index_col=0)
 metadata = pd.read_csv("metadata.csv", index_col=0)
 
-# Run edgeR QL pipeline
-results = edger(counts, metadata, design="~ batch + condition")
+# Run edgeR QL pipeline using EdgeR class
+model = EdgeR(counts, metadata, design="~ batch + condition")
+res_obj = model.run_test()
+results = model.get_results(res_obj)
 results.report()
 
 # Filter and export
@@ -163,10 +166,11 @@ sig.to_csv("edger_significant.csv")
 ## Error handling
 
 ```python
+from rosetta import EdgeR
 from rosetta._errors import RDataError, RFormulaError
 
 try:
-    results = edger(counts, metadata, design="~ condition")
+    model = EdgeR(counts, metadata, design="~ condition")
 except RDataError as e:
     print(f"Data problem: {e}")
     # "Count matrix contains negative values"

@@ -1,7 +1,5 @@
 """Tests for rosetta.wrappers.deseq2."""
 
-"""Tests for rosetta.wrappers.deseq2."""
-
 import pandas as pd
 import pytest
 from rosetta._deps import is_installed
