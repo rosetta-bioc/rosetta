@@ -87,13 +87,10 @@ class ClusterProfiler(BaseWrapper):
 
         Args:
             df: DataFrame containing log2FoldChange values.
-            gene_col: Column name containing gene IDs.
+            gene_col: Column name containing gene IDs, or "index" to use the row index.
+                The row index and its name are preserved when using "index".
             fc_col: Column name for fold change values.
         """
-        if gene_col == "index":
-            df = df.reset_index()
-            gene_col = "index"
-
-        df = df.dropna(subset=[fc_col])
-        df = df.sort_values(by=fc_col, ascending=False)
-        return df.set_index(gene_col)[fc_col]
+        if gene_col != "index":
+            df = df.set_index(gene_col)
+        return df[fc_col].dropna().sort_values(ascending=False)
