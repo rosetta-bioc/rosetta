@@ -41,39 +41,43 @@ def diff_expr(
         >>> sig_genes = results[results["padj"] < 0.05]
     """
     if method == "deseq2":
-        from .wrappers.deseq2 import get_results, lfc_shrink, run_deseq2
+        from . import _bridge
+        from .wrappers.deseq2 import DESeq2
 
-        dds = run_deseq2(counts, metadata, design)
+        model = DESeq2(counts, metadata, design)
+        model.run_deseq()
 
         if shrinkage:
             # Need coefficient name for shrinkage
-            from rpy2.robjects.conversion import localconverter
-            from rpy2.robjects.packages import importr
-
-            from ._bridge import _converter
-            deseq2_pkg = importr("DESeq2")
-            with localconverter(_converter):
-                coefs = list(deseq2_pkg.resultsNames(dds))
+            with _bridge.localconverter(_bridge._converter):
+                coefs = list(model.deseq_pkg.resultsNames(model.r_obj))
             # Use last coefficient (typically the treatment effect)
             coef = coefs[-1] if coefs else None
             if coef:
-                result = lfc_shrink(dds, coef=coef, type=shrinkage)
+                result = model.lfc_shrink(coef=coef, type=shrinkage)
                 result._rosetta_method = "deseq2"
                 return result
 
-        result = get_results(dds, contrast=contrast, lfc_threshold=lfc_threshold, alpha=alpha)
+        result_kwargs = {"alpha": alpha, "lfcThreshold": lfc_threshold}
+        if contrast:
+            result_kwargs["contrast"] = _bridge.ro.StrVector(contrast)
+        result = model.get_results(**result_kwargs)
         result._rosetta_method = "deseq2"
         return result
 
     elif method == "edger":
-        from .wrappers.edger import edger
-        result = edger(counts, metadata, design, lfc=lfc_threshold)
+        from .wrappers.edger import EdgeR
+        model = EdgeR(counts, metadata, design)
+        test_result = model.run_test(lfc=lfc_threshold)
+        result = model.get_results(test_result)
         result._rosetta_method = "edger"
         return result
 
     elif method == "limma":
-        from .wrappers.limma import limma_voom
-        result = limma_voom(counts, metadata, design)
+        from .wrappers.limma import Limma
+        model = Limma(counts, metadata, design)
+        model.run_ebayes()
+        result = model.get_results()
         result._rosetta_method = "limma"
         return result
 

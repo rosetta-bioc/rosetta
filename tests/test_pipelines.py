@@ -1,18 +1,19 @@
 """Tests for rosetta.pipelines — high-level one-call workflows.
 
-Strategy: pipelines.py uses lazy imports inside each function body.
-We inject fake modules into sys.modules so those names resolve correctly.
+Differential-expression tests patch existing wrapper classes so stale imports
+or calls to removed methods cannot be hidden by fake wrapper modules.
 """
 
 import sys
 import types
+from unittest.mock import MagicMock, call, patch, sentinel
+
 import pandas as pd
 import pytest
-from unittest.mock import patch, MagicMock
 
-from rosetta.pipelines import diff_expr, enrichment, compare
+from rosetta import _bridge
+from rosetta.pipelines import compare, diff_expr, enrichment
 from rosetta.results import RosettaDataFrame
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -46,27 +47,29 @@ def metadata():
 
 
 # ---------------------------------------------------------------------------
-# Module factories — simulate lazy imports inside pipelines.py
+# Wrapper fixtures — patch classes on their real modules
 # ---------------------------------------------------------------------------
 
-def _deseq2_mod(dds=None, get_rv=None, shrink_rv=None):
-    mod = types.ModuleType("rosetta.wrappers.deseq2")
-    mod.run_deseq2 = MagicMock(return_value=dds or MagicMock())
-    mod.get_results = MagicMock(return_value=get_rv or _fake_df())
-    mod.lfc_shrink = MagicMock(return_value=shrink_rv or _fake_df())
-    return mod
+@pytest.fixture
+def deseq2_class():
+    with patch("rosetta.wrappers.deseq2.DESeq2", autospec=True) as wrapper:
+        wrapper.return_value.get_results.return_value = _fake_df()
+        wrapper.return_value.lfc_shrink.return_value = _fake_df()
+        yield wrapper
 
 
-def _edger_mod(rv=None):
-    mod = types.ModuleType("rosetta.wrappers.edger")
-    mod.edger = MagicMock(return_value=rv or _fake_df("FDR"))
-    return mod
+@pytest.fixture
+def edger_class():
+    with patch("rosetta.wrappers.edger.EdgeR", autospec=True) as wrapper:
+        wrapper.return_value.get_results.return_value = _fake_df("FDR")
+        yield wrapper
 
 
-def _limma_mod(rv=None):
-    mod = types.ModuleType("rosetta.wrappers.limma")
-    mod.limma_voom = MagicMock(return_value=rv or _fake_df("adj.P.Val"))
-    return mod
+@pytest.fixture
+def limma_class():
+    with patch("rosetta.wrappers.limma.Limma", autospec=True) as wrapper:
+        wrapper.return_value.get_results.return_value = _fake_df("adj.P.Val")
+        yield wrapper
 
 
 def _cp_mod():
@@ -90,70 +93,155 @@ def test_diff_expr_invalid_method_raises(counts, metadata):
 # diff_expr — DESeq2
 # ---------------------------------------------------------------------------
 
-def test_diff_expr_deseq2_calls_run_and_get(counts, metadata):
-    mod = _deseq2_mod()
-    with patch.dict(sys.modules, {"rosetta.wrappers.deseq2": mod}):
-        result = diff_expr(counts, metadata, method="deseq2")
-    mod.run_deseq2.assert_called_once()
-    mod.get_results.assert_called_once()
-    assert isinstance(result, pd.DataFrame)
+def test_diff_expr_deseq2_calls_run_and_get(counts, metadata, deseq2_class):
+    model = deseq2_class.return_value
+
+    result = diff_expr(counts, metadata)
+
+    deseq2_class.assert_called_once_with(counts, metadata, "~ condition")
+    assert model.method_calls == [
+        call.run_deseq(),
+        call.get_results(alpha=0.05, lfcThreshold=0.0),
+    ]
+    assert result is model.get_results.return_value
+    assert result._rosetta_method == "deseq2"
 
 
-def test_diff_expr_deseq2_passes_alpha_and_lfc(counts, metadata):
-    mod = _deseq2_mod()
-    with patch.dict(sys.modules, {"rosetta.wrappers.deseq2": mod}):
-        diff_expr(counts, metadata, method="deseq2", alpha=0.1, lfc_threshold=1.0)
-    _, kwargs = mod.get_results.call_args
-    assert kwargs.get("alpha") == 0.1
-    assert kwargs.get("lfc_threshold") == 1.0
+def test_diff_expr_deseq2_passes_alpha_and_lfc(counts, metadata, deseq2_class):
+    diff_expr(
+        counts, metadata, design="~ batch + condition", method="deseq2",
+        alpha=0.1, lfc_threshold=1.0,
+    )
+
+    deseq2_class.assert_called_once_with(counts, metadata, "~ batch + condition")
+    deseq2_class.return_value.get_results.assert_called_once_with(
+        alpha=0.1, lfcThreshold=1.0,
+    )
 
 
-def test_diff_expr_deseq2_with_shrinkage(counts, metadata):
-    mod = _deseq2_mod()
-    coef_list = ["Intercept", "condition_B_vs_A"]
+@pytest.mark.parametrize("contrast", [None, []])
+def test_diff_expr_deseq2_omits_absent_contrast(counts, metadata, deseq2_class, contrast):
+    with patch.object(_bridge, "ro") as ro:
+        diff_expr(counts, metadata, contrast=contrast)
 
-    pkg_mock = MagicMock()
-    pkg_mock.resultsNames.return_value = coef_list
+    ro.StrVector.assert_not_called()
+    deseq2_class.return_value.get_results.assert_called_once_with(
+        alpha=0.05, lfcThreshold=0.0,
+    )
 
-    rpy2_pkg = types.ModuleType("rpy2.robjects.packages")
-    rpy2_pkg.importr = MagicMock(return_value=pkg_mock)
 
-    rpy2_conv = types.ModuleType("rpy2.robjects.conversion")
-    rpy2_conv.localconverter = MagicMock()
+def test_diff_expr_deseq2_converts_contrast(counts, metadata, deseq2_class):
+    contrast = ["condition", "B", "A"]
+    with patch.object(_bridge, "ro") as ro:
+        ro.StrVector.return_value = sentinel.r_contrast
+        diff_expr(counts, metadata, contrast=contrast)
 
-    bridge = types.ModuleType("rosetta._bridge")
-    bridge._converter = MagicMock()
+    ro.StrVector.assert_called_once_with(contrast)
+    deseq2_class.return_value.get_results.assert_called_once_with(
+        alpha=0.05, lfcThreshold=0.0, contrast=sentinel.r_contrast,
+    )
 
-    with patch.dict(sys.modules, {
-        "rosetta.wrappers.deseq2": mod,
-        "rpy2.robjects.packages": rpy2_pkg,
-        "rpy2.robjects.conversion": rpy2_conv,
-        "rosetta._bridge": bridge,
-    }):
-        result = diff_expr(counts, metadata, method="deseq2", shrinkage="normal")
 
-    mod.lfc_shrink.assert_called_once()
-    assert isinstance(result, pd.DataFrame)
+@pytest.mark.parametrize("shrinkage", ["apeglm", "ashr", "normal"])
+def test_diff_expr_deseq2_with_shrinkage(counts, metadata, deseq2_class, shrinkage):
+    model = deseq2_class.return_value
+    model.r_obj = sentinel.unfitted_dds
+    model.deseq_pkg = MagicMock()
+    model.deseq_pkg.resultsNames.return_value = ["Intercept", "condition_B_vs_A"]
+
+    def fit():
+        model.r_obj = sentinel.fitted_dds
+
+    model.run_deseq.side_effect = fit
+    with patch.object(_bridge, "localconverter") as localconverter:
+        result = diff_expr(counts, metadata, method="deseq2", shrinkage=shrinkage)
+
+    localconverter.assert_called_once_with(_bridge._converter)
+    assert model.method_calls == [
+        call.run_deseq(),
+        call.deseq_pkg.resultsNames(sentinel.fitted_dds),
+        call.lfc_shrink(coef="condition_B_vs_A", type=shrinkage),
+    ]
+    model.get_results.assert_not_called()
+    assert result is model.lfc_shrink.return_value
+    assert result._rosetta_method == "deseq2"
+
+
+def test_diff_expr_deseq2_shrinkage_without_coefficient(counts, metadata, deseq2_class):
+    model = deseq2_class.return_value
+    model.r_obj = sentinel.fitted_dds
+    model.deseq_pkg = MagicMock()
+    model.deseq_pkg.resultsNames.return_value = []
+
+    with patch.object(_bridge, "localconverter"):
+        result = diff_expr(
+            counts, metadata, shrinkage="normal", alpha=0.1, lfc_threshold=1.0,
+        )
+
+    model.lfc_shrink.assert_not_called()
+    assert model.method_calls == [
+        call.run_deseq(),
+        call.deseq_pkg.resultsNames(sentinel.fitted_dds),
+        call.get_results(alpha=0.1, lfcThreshold=1.0),
+    ]
+    assert result is model.get_results.return_value
+    assert result._rosetta_method == "deseq2"
 
 
 # ---------------------------------------------------------------------------
 # diff_expr — edgeR and limma
 # ---------------------------------------------------------------------------
 
-def test_diff_expr_edger(counts, metadata):
-    mod = _edger_mod()
-    with patch.dict(sys.modules, {"rosetta.wrappers.edger": mod}):
-        result = diff_expr(counts, metadata, method="edger")
-    mod.edger.assert_called_once()
-    assert isinstance(result, pd.DataFrame)
+@pytest.mark.parametrize("lfc_threshold", [0.0, 1.0])
+def test_diff_expr_edger(counts, metadata, edger_class, lfc_threshold):
+    model = edger_class.return_value
+    model.run_test.return_value = sentinel.test_result
+
+    result = diff_expr(
+        counts, metadata, design="~ batch + condition", method="edger",
+        lfc_threshold=lfc_threshold,
+    )
+
+    edger_class.assert_called_once_with(counts, metadata, "~ batch + condition")
+    assert model.method_calls == [
+        call.run_test(lfc=lfc_threshold),
+        call.get_results(sentinel.test_result),
+    ]
+    assert result is model.get_results.return_value
+    assert result._rosetta_method == "edger"
 
 
-def test_diff_expr_limma(counts, metadata):
-    mod = _limma_mod()
-    with patch.dict(sys.modules, {"rosetta.wrappers.limma": mod}):
-        result = diff_expr(counts, metadata, method="limma")
-    mod.limma_voom.assert_called_once()
-    assert isinstance(result, pd.DataFrame)
+def test_diff_expr_limma(counts, metadata, limma_class):
+    model = limma_class.return_value
+
+    result = diff_expr(counts, metadata, design="~ batch + condition", method="limma")
+
+    limma_class.assert_called_once_with(counts, metadata, "~ batch + condition")
+    assert model.method_calls == [call.run_ebayes(), call.get_results()]
+    assert result is model.get_results.return_value
+    assert result._rosetta_method == "limma"
+
+
+@pytest.mark.parametrize(
+    ("method", "wrapper_path", "analysis_method"),
+    [
+        ("deseq2", "rosetta.wrappers.deseq2.DESeq2", "run_deseq"),
+        ("edger", "rosetta.wrappers.edger.EdgeR", "run_test"),
+        ("limma", "rosetta.wrappers.limma.Limma", "run_ebayes"),
+    ],
+)
+def test_diff_expr_propagates_analysis_error(counts, metadata, method,
+                                            wrapper_path, analysis_method):
+    error = RuntimeError("Analysis failed")
+    with patch(wrapper_path, autospec=True) as wrapper:
+        model = wrapper.return_value
+        getattr(model, analysis_method).side_effect = error
+
+        with pytest.raises(RuntimeError) as exc:
+            diff_expr(counts, metadata, method=method)
+
+    assert exc.value is error
+    model.get_results.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -241,3 +329,16 @@ def test_compare_n_methods_is_row_sum(counts, metadata):
         mock_de.side_effect = [_fake_df("padj"), _fake_df("FDR")]
         result = compare(counts, metadata, methods=["deseq2", "edger"])
     assert (result["n_methods"] == result[["deseq2", "edger"]].sum(axis=1)).all()
+
+
+def test_compare_uses_real_diff_expr_dispatch(counts, metadata, deseq2_class,
+                                            edger_class, limma_class):
+    result = compare(counts, metadata)
+
+    assert result.columns.tolist() == ["deseq2", "edger", "limma", "n_methods"]
+    assert result["n_methods"].to_dict() == {
+        "GeneA": 3, "GeneC": 3, "GeneB": 0, "GeneD": 0,
+    }
+    for wrapper in (deseq2_class, edger_class, limma_class):
+        wrapper.assert_called_once_with(counts, metadata, "~ condition")
+        wrapper.return_value.get_results.assert_called_once()
